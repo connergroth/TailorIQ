@@ -7,14 +7,14 @@ import {
   signOut
 } from 'firebase/auth';
 
-// Firebase configuration object with direct values for integration
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyD1E0GMrlFP1-NVV2oXcdMLyAxJ-cYugXQ",
-  authDomain: "tailoriq-7c054.firebaseapp.com",
-  projectId: "tailoriq-7c054",
-  storageBucket: "tailoriq-7c054.firebasestorage.app",
-  messagingSenderId: "226015893902",
-  appId: "1:226015893902:web:384fc18bdc555db635ecdf"
+  apiKey: process.env.FIREBASE_API_KEY || "",
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "",
+  projectId: process.env.FIREBASE_PROJECT_ID || "",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: process.env.FIREBASE_APP_ID || ""
 };
 
 // Initialize Firebase
