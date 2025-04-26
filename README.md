@@ -146,12 +146,24 @@ npm run start
 ## 📁 Project Structure
 
 ```
-tailoriq/
-├── apps/
-│   ├── client/       # Frontend: React app
-│   ├── server/       # Backend: Express app
-│   └── shared/       # Shared types and utils
-├── README.md
-├── package.json
-├── .env
+TailorIQ/
+├── client/                     # Frontend React application
+│   ├── src/
+│   │   ├── components/         # UI components 
+│   │   │   ├── ui/             # shadcn/ui component library
+│   │   │   └── ...             # Application-specific components
+│   │   ├── contexts/           # React context providers
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── lib/                # Utility functions & API clients
+│   │   └── pages/              # Page components
+│   └── index.html              # HTML entry point
+├── server/                     # Backend Express server
+│   ├── index.ts                # Server entry point
+│   ├── routes.ts               # API route definitions
+│   ├── openai.ts               # OpenAI API integration
+│   ├── pdf.ts                  # PDF generation logic
+│   └── storage.ts              # Data storage interface
+├── shared/                     # Shared code between client & server
+│   └── schema.ts               # Database and validation schemas
+└── tailwind.config.ts          # Tailwind CSS configuration
 ```
