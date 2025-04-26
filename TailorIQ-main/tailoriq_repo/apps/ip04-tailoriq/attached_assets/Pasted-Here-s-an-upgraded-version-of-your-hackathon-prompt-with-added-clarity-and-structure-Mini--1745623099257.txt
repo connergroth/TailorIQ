@@ -1,0 +1,39 @@
+Here's an upgraded version of your hackathon prompt, with added clarity and structure:
+
+---
+
+**Mini Hackathon Brief: Resumaker Web App**
+
+We’re kicking off a 4-hour mini hackathon to develop a web app called **Resumaker**, designed to streamline resume creation. The goal is to build a functional prototype within the hackathon timeframe.
+
+### Objective:
+Create a user-friendly resume maker that allows users to input their professional details, such as **work experience**, **education**, **certifications**, etc., and automatically generates a well-organized, visually appealing resume.
+
+### Features:
+1. **Dynamic Resume Canvas**: The user interface will feature a **canvas** displaying the user's resume, designed to fit all information on **one page**. Users will interact with **side panels** containing sections for input fields (e.g., work experience, education, certifications).
+    - The app must dynamically adjust the layout to accommodate varying lengths of user input.
+    - Ensure text and elements auto-scale to fit within the page constraints.
+
+2. **Integrated Language Model (LLM) Assistance**:
+    - Incorporate a **free LLM** to review the user’s entered information and suggest improvements.
+    - If the LLM identifies a better way to phrase or structure the content, the app should integrate the LLM’s recommendations automatically into the resume.
+
+3. **Technological Stack**:
+    - **Frontend**: Use **React** for a responsive and efficient user interface.
+    - **Backend**: Implement a **Python backend** to handle user input processing and LLM integration.
+
+### Additional Considerations:
+- Focus on **minimalistic design** for the UI to ensure clarity and ease of use.
+- Include validation checks to ensure user input meets professional standards (e.g., avoiding spelling errors or inappropriate formatting).
+- Ensure the resume output is downloadable in **PDF format**.
+
+### Deliverables:
+By the end of the hackathon, aim to produce:
+1. A functional web app that fulfills the above requirements.
+2. A demo showcasing the resume creation process and LLM-assisted improvements.
+
+Let’s leverage our creativity and technical skills to create a tool that simplifies one of the most tedious parts of job applications. Good luck, team!
+
+---
+
+Let me know if you’d like any further enhancements!
