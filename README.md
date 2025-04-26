@@ -18,14 +18,11 @@ Stay tuned for our live deployment!
 
 - [✨ Features](#-features)
 - [🛠️ Tech Stack](#-tech-stack)
-- [📺 Architecture](#-architecture)
 - [📦 Installation](#-installation)
 - [⚙️ Configuration](#-configuration)
 - [🔑 API Keys](#-api-keys)
 - [🚀 Running the Application](#-running-the-application)
 - [📁 Project Structure](#-project-structure)
-- [📡 API Overview](#-api-overview)
-- [👨‍💼 Contributors](#-contributors)
 
 ---
 
