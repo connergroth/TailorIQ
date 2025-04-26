@@ -1,0 +1,54 @@
+[vite] connecting...
+[vite] connected.
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in with Google:  
+Error {}
+
+Authentication failed: 
+Error {}
+
+Error signing in anonymously:  
+_FirebaseError {code: "auth/api-key-not-valid.-please-pass-a-valid-api-key.", customData: {…}, name: "FirebaseError"}
+code: "auth/api-key-not-valid.-please-pass-a-valid-api-key."
+customData: Object
+name: "FirebaseError"
+message: "Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.)."
+stack: "FirebaseError: Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.).↵ at createErrorInternal (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_auth.js?v=d869aeb9:694:37)↵ at _fail (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_auth.js?v=d869aeb9:659:9)↵ at _performFetchWithErrorHandling (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_auth.js?v=d869aeb9:1126:9)↵ at async _performSignInRequest (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_auth.js?v=d869aeb9:1137:26)↵ at async signInAnonymously (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/firebase_auth.js?v=d869aeb9:4509:20)↵ at async signInAsGuest (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/src/lib/firebase.ts:31:20)↵ at async handleGuestSignIn (https://afe5b389-4e21-45ca-88dd-ce87035742ff-00-ilonjkbkuwgv.kirk.replit.dev/src/components/Auth.tsx:38:20)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
