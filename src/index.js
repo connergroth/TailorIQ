@@ -7,7 +7,7 @@ import QuestionnaireSection from './components/questionnaire';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <TailorIQLandingPage />
-    
+    {/* <TailorIQLandingPage /> */}
+    <QuestionnaireSection />
   </React.StrictMode>
 );
