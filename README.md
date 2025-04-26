@@ -15,18 +15,6 @@ Stay tuned for our live deployment!
 
 ---
 
-## 📚 Table of Contents
-
-- [✨ Features](#-features)
-- [🛠️ Tech Stack](#-tech-stack)
-- [📦 Installation](#-installation)
-- [⚙️ Configuration](#-configuration)
-- [🔑 API Keys](#-api-keys)
-- [🚀 Running the Application](#-running-the-application)
-- [📁 Project Structure](#-project-structure)
-
----
-
 ## ✨ Features
 
 ### 🧬 AI-Enhanced Resume Generation
