@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import QuestionnaireSection from './pages/questionnaire';
+import QuestionnaireSection from './components/questionnaire';
 import { ArrowLeft, Moon, Sun } from 'lucide-react';
 
 const Logo = ({ darkMode }) => {

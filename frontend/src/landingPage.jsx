@@ -54,13 +54,7 @@ const Navbar = ({ darkMode, toggleDarkMode, handleGetStarted, isAuthenticated })
           <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Features</a>
           <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>How It Works</a>
           <a href="#why-tailoriq" onClick={(e) => smoothScroll(e, 'why-tailoriq')} className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Why TailorIQ</a>
-          <a href="#pricing" className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Pricing</a>
-          <button 
-            onClick={handleLogin} 
-            className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}
-          >
-            {isAuthenticated ? 'Dashboard' : 'Log In'}
-          </button>
+          <a href="#login" className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Log In</a>
         </div>
         <div className="flex items-center space-x-4">
           <button 

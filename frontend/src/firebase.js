@@ -37,7 +37,7 @@ export const signInWithGoogle = async () => {
 // Sign out
 export const signOutUser = async () => {
   try {
-    await signOut(auth);
+    // await signOut(auth);
   } catch (error) {
     console.error("Error signing out: ", error);
     throw error;
