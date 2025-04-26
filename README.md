@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/0edb2fbc-7511-4deb-b2fe-ba2d1f948d8f" alt="TailorAI" width="350"/>
+  <img src="https://github.com/user-attachments/assets/91faa122-90c6-49a5-9798-b264758e95c2" alt="TailorAI" width="350"/>
 </p>
 
 # 🧵 TailorIQ
