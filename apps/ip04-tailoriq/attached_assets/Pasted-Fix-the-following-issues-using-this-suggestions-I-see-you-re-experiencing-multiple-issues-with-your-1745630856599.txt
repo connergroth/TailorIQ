@@ -1,0 +1,239 @@
+Fix the following issues using this suggestions: I see you're experiencing multiple issues with your resume builder application. Let's address the new problems with the Settings tab:
+
+Font and font size settings don't apply to the resume
+Export functionality isn't working
+
+These issues are connected to the PDF generation problem we discussed earlier. Let's fix all these issues:
+1. Fixing the Settings Panel Functionality
+The issue with the settings panel is that it's not properly connected to the resume state and rendering pipeline. We need to:
+
+Update the state management for settings
+Connect font settings to the resume template
+Fix the PDF export functionality
+
+Let's start by fixing the SettingsPanel.tsx component to properly update and store the settings:
+typescript// First, let's add the settings to the main state in ResumeMaker.tsx
+// Add this to your existing state in ResumeMaker.tsx:
+const [settings, setSettings] = useState({
+  fontSize: 11,
+  fontFamily: "times",
+  lineSpacing: 1.15,
+  autoAdjust: true,
+  atsMode: true,
+  paperSize: "letter", // letter or a4
+  fileFormat: "pdf"
+});
+
+// Pass these settings to your SettingsPanel component:
+<SettingsPanel 
+  activeTemplate={activeTemplate}
+  onTemplateChange={setActiveTemplate}
+  settings={settings}
+  onSettingsChange={setSettings}
+/>
+
+// Then pass the settings to your ResumeCanvas component:
+<ResumeCanvas 
+  resumeData={resumeData} 
+  template={activeTemplate}
+  settings={settings}
+/>
+Now update the SettingsPanel.tsx component to accept and update the settings:
+typescriptinterface SettingsPanelProps {
+  activeTemplate: ResumeTemplate;
+  onTemplateChange: (template: ResumeTemplate) => void;
+  settings: {
+    fontSize: number;
+    fontFamily: string;
+    lineSpacing: number;
+    autoAdjust: boolean;
+    atsMode: boolean;
+    paperSize: string;
+    fileFormat: string;
+  };
+  onSettingsChange: (settings: any) => void;
+}
+
+export default function SettingsPanel({ 
+  activeTemplate, 
+  onTemplateChange,
+  settings,
+  onSettingsChange
+}: SettingsPanelProps) {
+  // Replace your local state variables with the settings from props
+  
+  // Update your handlers to use the onSettingsChange prop
+  const handleFontSizeChange = (value: number[]) => {
+    onSettingsChange({...settings, fontSize: value[0]});
+  };
+  
+  const handleFontFamilyChange = (value: string) => {
+    onSettingsChange({...settings, fontFamily: value});
+  };
+  
+  // And similar for other settings...
+}
+2. Fixing PDF Generation and Export
+For the PDF generation issue, we need to modify server/pdf.ts to be more flexible with the Puppeteer configuration and apply the settings:
+typescript// In server/pdf.ts
+export async function generatePDF(resumeData: Resume, template: ResumeTemplate, settings: any = {}): Promise<Buffer> {
+  let browser = null;
+  try {
+    // Generate the HTML for the resume
+    const htmlContent = generateResumeHTML(resumeData, template, settings);
+
+    // Launch Puppeteer with more flexible configuration
+    browser = await puppeteer.launch({
+      headless: true,
+      // Don't specify executablePath - let Puppeteer find Chrome/Chromium automatically
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--disable-extensions'
+      ]
+    });
+
+    const page = await browser.newPage();
+    
+    // Set viewport size to ensure content fits properly
+    await page.setViewport({ width: 1100, height: 1400 });
+
+    // Set content to the HTML with longer timeout
+    await page.setContent(htmlContent, { 
+      waitUntil: 'networkidle0',
+      timeout: 30000 
+    });
+
+    // Configure PDF options based on settings
+    const pdfOptions: any = {
+      printBackground: true,
+      margin: {
+        top: '0.5in',
+        right: '0.5in',
+        bottom: '0.5in',
+        left: '0.5in'
+      },
+      preferCSSPageSize: true
+    };
+    
+    // Set paper size from settings
+    if (settings.paperSize === 'letter') {
+      pdfOptions.format = 'Letter';
+    } else if (settings.paperSize === 'a4') {
+      pdfOptions.format = 'A4';
+    }
+
+    // Generate the PDF
+    const pdfData = await page.pdf(pdfOptions);
+    
+    // Convert Uint8Array to Buffer
+    const pdfBuffer = Buffer.from(pdfData);
+    return pdfBuffer;
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to generate PDF: ${errorMessage}`);
+  } finally {
+    // Make sure browser closes even if there's an error
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
+    }
+  }
+}
+Then update the HTML generation function to apply the settings:
+typescriptfunction generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settings: any = {}): string {
+  // Default settings
+  const fontSize = settings.fontSize || 11;
+  const fontFamily = settings.fontFamily || 'times';
+  const lineSpacing = settings.lineSpacing || 1.15;
+  
+  // Common styles with settings applied
+  const commonStyles = `
+    body {
+      font-family: ${getFontFamily(fontFamily)};
+      font-size: ${fontSize}pt;
+      line-height: ${lineSpacing};
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      color: #333;
+    }
+    // ...rest of your styles
+  `;
+  
+  // Rest of your function...
+}
+
+// Helper function to get actual font family CSS
+function getFontFamily(fontFamily: string): string {
+  switch (fontFamily) {
+    case 'times':
+      return "'Times New Roman', Times, serif";
+    case 'calibri':
+      return "Calibri, 'Segoe UI', sans-serif";
+    case 'arial':
+      return "Arial, Helvetica, sans-serif";
+    case 'garamond':
+      return "Garamond, Georgia, serif";
+    case 'helvetica':
+      return "Helvetica, Arial, sans-serif";
+    default:
+      return "'Times New Roman', Times, serif";
+  }
+}
+3. Update Routes to Support Settings
+Finally, update your routes to accept settings as part of the PDF generation request:
+typescript// In server/routes.ts
+app.post("/api/resume/generate-pdf", async (req, res) => {
+  try {
+    const { resumeData, template, settings } = req.body;
+    
+    if (!resumeData || !template) {
+      return res.status(400).json({ message: "Resume data and template are required" });
+    }
+    
+    const pdfBuffer = await generatePDF(resumeData, template, settings);
+    
+    // Set the appropriate headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+    
+    // Send the PDF buffer as the response
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).json({ message: "Error generating PDF" });
+  }
+});
+4. Update the PDF Download Button Handler
+Lastly, update the download handler in your ResumeMaker.tsx to include the settings:
+typescriptconst handleDownloadPDF = () => {
+  generatePdfMutation.mutate({
+    resumeData,
+    template: activeTemplate,
+    settings
+  });
+};
+
+// And update the mutation definition:
+const generatePdfMutation = useMutation({
+  mutationFn: async (data: { resumeData: Resume; template: ResumeTemplate; settings: any }) => {
+    const response = await apiRequest("POST", "/api/resume/generate-pdf", data);
+    return response.blob();
+  },
+  // ... rest of your mutation code
+});
+5. OpenAI API Key Fix
+As mentioned earlier, you need to set a proper OpenAI API key. Update server/openai.ts:
+typescriptconst openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "", // Remove the "demo-key" fallback
+});
+And make sure to set the environment variable before starting your application.
+These changes should fix the issues with your settings panel not updating fonts and sizes, as well as enable the export functionality and resolve the OpenAI API authentication error.
