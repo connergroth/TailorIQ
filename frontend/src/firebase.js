@@ -20,35 +20,28 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Firebase services
 const auth = getAuth(app);
-const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-// Anonymous sign-in
-function signInAnonymouslyUser() {
-  return signInAnonymously(auth);
-}
-
-// Google Auth - Popup
-function signInWithGooglePopup() {
-  const provider = new GoogleAuthProvider();
-  return signInWithPopup(auth, provider);
-}
-
-// Google Auth - Redirect
-function signInWithGoogleRedirect() {
-  const provider = new GoogleAuthProvider();
-  return signInWithRedirect(auth, provider);
-}
-
-export {
-  app,
-  auth,
-  db,
-  signInAnonymouslyUser as signInAnonymously,
-  signInWithGooglePopup,
-  signInWithGoogleRedirect
+// Sign in with Google
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing in with Google: ", error);
+    throw error;
+  }
 };
 
-export default app;
+// Sign out
+export const signOutUser = async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error("Error signing out: ", error);
+    throw error;
+  }
+};
+
+export { auth };
