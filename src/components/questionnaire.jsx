@@ -119,9 +119,9 @@ const QuestionnaireSection = ({ darkMode, onSubmit }) => {
 
   /* --------------------------- helper UI -------------------------------- */
   const inputClasses =
-    "w-full p-3 rounded-md border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500";
-  const inputLight = "bg-white border-gray-300 placeholder-gray-500";
-  const inputDark = "bg-gray-800 border-gray-700 text-white placeholder-gray-400";
+  "w-full p-3 rounded-md border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+const inputLight = "bg-white border-gray-300 placeholder-gray-500";
+const inputDark = "bg-gray-800 border-gray-700 text-black placeholder-gray-400";
 
   const cardClasses =
     "mb-6 p-6 rounded-xl shadow-sm transition-colors duration-300";
