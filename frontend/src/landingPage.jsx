@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Edit, FileText, FolderOpen, Moon, PenTool, Rocket, Search, Star, Sun } from 'lucide-react';
-
+import { useUser } from '../contexts/UserContext';
 // Smooth scroll function
 const smoothScroll = (e, targetId) => {
   e.preventDefault();
@@ -390,20 +390,13 @@ const Footer = ({ darkMode }) => {
 };
 
 // Main Landing Page Component
-const TailorIQLandingPage = ({ darkMode, toggleDarkMode, signInAsGuest, isAuthenticated }) => {
+const TailorIQLandingPage = ({ darkMode, toggleDarkMode, isLoggedIn }) => {
   const navigate = useNavigate();
+  const { currentUser } = useUser();
   
-  const handleGetStarted = async () => {
-    try {
-      // If user is not authenticated, sign them in anonymously
-      if (!isAuthenticated) {
-        await signInAsGuest();
-      }
-      // Navigate to the questionnaire page
-      navigate('/questionnaire');
-    } catch (error) {
-      console.error("Error during onboarding:", error);
-    }
+  const handleGetStarted = () => {
+    // Navigate directly to the login page for Google authentication
+    navigate('/login');
   };
 
   return (
@@ -412,7 +405,7 @@ const TailorIQLandingPage = ({ darkMode, toggleDarkMode, signInAsGuest, isAuthen
         darkMode={darkMode} 
         toggleDarkMode={toggleDarkMode} 
         handleGetStarted={handleGetStarted}
-        isAuthenticated={isAuthenticated}
+        isLoggedIn={!!currentUser}
       />
       <HeroSection darkMode={darkMode} handleGetStarted={handleGetStarted} />
       <FeaturesSection darkMode={darkMode} />

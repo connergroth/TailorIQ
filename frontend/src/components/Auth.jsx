@@ -1,12 +1,16 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { signInWithGoogle } from '../firebase';
 
-const Auth = ({ darkMode, onSuccess }) => {
+const Auth = ({ darkMode }) => {
+  const navigate = useNavigate();
+
   const handleGoogleSignIn = async () => {
     try {
       const user = await signInWithGoogle();
       if (user) {
-        onSuccess(user);
+        // Redirect to questionnaire after successful login
+        navigate('/questionnaire');
       }
     } catch (error) {
       console.error("Authentication failed:", error);

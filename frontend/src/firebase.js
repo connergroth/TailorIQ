@@ -4,7 +4,7 @@ import {
   GoogleAuthProvider,
   signInAnonymously,
   signInWithPopup,
-  signInWithRedirect
+  signOut
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -34,10 +34,22 @@ export const signInWithGoogle = async () => {
   }
 };
 
+// Sign in as guest (anonymously)
+export const signInAsGuest = async () => {
+  try {
+    const result = await signInAnonymously(auth);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing in anonymously: ", error);
+    throw error;
+  }
+};
+
 // Sign out
 export const signOutUser = async () => {
   try {
-    // await signOut(auth);
+    await signOut(auth);
+    return true;
   } catch (error) {
     console.error("Error signing out: ", error);
     throw error;

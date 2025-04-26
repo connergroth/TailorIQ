@@ -62,14 +62,14 @@ const AppContent = () => {
         />
         <Route 
           path="/login" 
-          element={currentUser ? <Navigate to="/questionnaire" replace /> : <Auth darkMode={darkMode} onSuccess={() => {}} />} 
+          element={currentUser ? <Navigate to="/questionnaire" replace /> : <Auth darkMode={darkMode} />} 
         />
         <Route 
           path="/questionnaire" 
           element={
             <ProtectedRoute>
               <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
-                <QuestionnaireSection darkMode={darkMode} onSubmit={handleFormSubmit} />
+                <QuestionnaireSection darkMode={darkMode} onSubmit={handleFormSubmit} toggleDarkMode={toggleDarkMode} />
               </div>
             </ProtectedRoute>
           } 
