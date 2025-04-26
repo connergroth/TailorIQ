@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Edit, FileText, FolderOpen, Moon, PenTool, Rocket, Search, Star, Sun } from 'lucide-react';
 
 // Smooth scroll function
@@ -17,9 +18,8 @@ const smoothScroll = (e, targetId) => {
 const Logo = ({ darkMode }) => {
   return (
     <div className="flex items-center space-x-2">
-      <div className="w-10 h-10 bg-indigo-600 rounded-md flex items-center justify-center">
-        {/* Replace this with your actual logo */}
-        <span className="text-white font-bold text-xl">T</span>
+      <div className="w-10 h-10 flex items-center justify-center">
+        <img src="/assets/logo.png" alt="TailorIQ Logo" className="max-h-full" />
       </div>
       <h1 className={`text-2xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>TailorIQ</h1>
     </div>
@@ -27,11 +27,23 @@ const Logo = ({ darkMode }) => {
 };
 
 // Navbar Component
-const Navbar = ({ darkMode, toggleDarkMode }) => {
+const Navbar = ({ darkMode, toggleDarkMode, handleGetStarted, isAuthenticated }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogin = () => {
+    // For now, this will just redirect to the questionnaire if already authenticated
+    // Later, this would open a login modal or redirect to a login page
+    if (isAuthenticated) {
+      navigate('/questionnaire');
+    } else {
+      // Authentication handling would go here in the future
+      handleGetStarted();
+    }
   };
 
   return (
@@ -43,7 +55,12 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>How It Works</a>
           <a href="#why-tailoriq" onClick={(e) => smoothScroll(e, 'why-tailoriq')} className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Why TailorIQ</a>
           <a href="#pricing" className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Pricing</a>
-          <a href="#login" className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}>Log In</a>
+          <button 
+            onClick={handleLogin} 
+            className={`${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'} transition-colors duration-300`}
+          >
+            {isAuthenticated ? 'Dashboard' : 'Log In'}
+          </button>
         </div>
         <div className="flex items-center space-x-4">
           <button 
@@ -53,7 +70,10 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
-          <button className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 hidden md:block">
+          <button 
+            onClick={handleGetStarted}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 hidden md:block"
+          >
             Start for Free
           </button>
           
@@ -81,8 +101,16 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
           <a href="#how-it-works" onClick={(e) => { smoothScroll(e, 'how-it-works'); toggleMobileMenu(); }} className={`block py-2 ${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'}`}>How It Works</a>
           <a href="#why-tailoriq" onClick={(e) => { smoothScroll(e, 'why-tailoriq'); toggleMobileMenu(); }} className={`block py-2 ${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'}`}>Why TailorIQ</a>
           <a href="#pricing" className={`block py-2 ${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'}`}>Pricing</a>
-          <a href="#login" className={`block py-2 ${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'}`}>Log In</a>
-          <button className="w-full mt-3 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-all duration-300">
+          <button 
+            onClick={handleLogin}
+            className={`block py-2 ${darkMode ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'}`}
+          >
+            {isAuthenticated ? 'Dashboard' : 'Log In'}
+          </button>
+          <button 
+            onClick={handleGetStarted}
+            className="w-full mt-3 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-all duration-300"
+          >
             Start for Free
           </button>
         </div>
@@ -91,8 +119,8 @@ const Navbar = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// Hero Section Component
-const HeroSection = ({ darkMode }) => {
+// Hero Section Component with Start button functionality
+const HeroSection = ({ darkMode, handleGetStarted }) => {
   return (
     <section className={`py-20 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900' : 'bg-gradient-to-br from-indigo-50 to-white'} transition-colors duration-300`}>
       <div className="container mx-auto px-4">
@@ -105,7 +133,10 @@ const HeroSection = ({ darkMode }) => {
               Input your experience, add a job description if you want — TailorIQ crafts a role-optimized, ATS-friendly resume in seconds.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start w-full">
-              <button className="bg-indigo-600 text-white px-8 py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 text-lg font-medium w-full sm:w-auto">
+              <button 
+                onClick={handleGetStarted}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-md hover:bg-indigo-700 transition-all duration-300 text-lg font-medium w-full sm:w-auto"
+              >
                 Start for Free
               </button>
               <a 
@@ -364,37 +395,32 @@ const Footer = ({ darkMode }) => {
   );
 };
 
-// Main App Component
-const TailorIQLandingPage = () => {
-  const [darkMode, setDarkMode] = useState(false);
+// Main Landing Page Component
+const TailorIQLandingPage = ({ darkMode, toggleDarkMode, signInAsGuest, isAuthenticated }) => {
+  const navigate = useNavigate();
   
-  // Check for user's preferred color scheme
-  useEffect(() => {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setDarkMode(true);
+  const handleGetStarted = async () => {
+    try {
+      // If user is not authenticated, sign them in anonymously
+      if (!isAuthenticated) {
+        await signInAsGuest();
+      }
+      // Navigate to the questionnaire page
+      navigate('/questionnaire');
+    } catch (error) {
+      console.error("Error during onboarding:", error);
     }
-    // Listen for changes in user preference
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => {
-      setDarkMode(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
   };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
-      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      <HeroSection darkMode={darkMode} />
+      <Navbar 
+        darkMode={darkMode} 
+        toggleDarkMode={toggleDarkMode} 
+        handleGetStarted={handleGetStarted}
+        isAuthenticated={isAuthenticated}
+      />
+      <HeroSection darkMode={darkMode} handleGetStarted={handleGetStarted} />
       <FeaturesSection darkMode={darkMode} />
       <HowItWorksSection darkMode={darkMode} />
       <WhyTailorIQSection darkMode={darkMode} />
