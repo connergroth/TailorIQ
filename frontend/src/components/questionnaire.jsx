@@ -413,17 +413,16 @@ const inputDark = "bg-gray-800 border-gray-700 text-white placeholder-gray-400";
               </div>
           </div>
       </section>
-      <div className="mt-3 mb-16 flex justify-center px-4">
-      <button
+      <div className={`mt-3 mb-16 flex justify-center px-4 ${darkMode ? 'bg-gray-900' : 'bg-white'} transition-colors duration-300`}>
+        <button
           onClick={onSubmit}
           className={`mt-12 w-full md:w-auto px-8 py-3 rounded-md text-lg font-medium transition-all duration-300 ${darkMode
                   ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
-      >
-              See Resume!
-          </button>
+        >
+          See Resume!
+        </button>
       </div>
-      
     </>
   );
 };

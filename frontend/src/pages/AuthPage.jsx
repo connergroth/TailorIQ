@@ -1,8 +1,8 @@
 // src/pages/AuthPage.jsx
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';           // your context/hook
-import { signInWithGooglePopup } from '../firebase';   // our helper
+import { useAuth } from '../hooks/useAuth';           
+import { signInWithGoogle } from '../firebase';
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -14,7 +14,7 @@ export default function AuthPage() {
       navigate('/', { replace: true });
     } else {
       // otherwise kick off Google popup
-      signInWithGooglePopup().catch(console.error);
+      signInWithGoogle().catch(console.error);
     }
   }, [user, navigate]);
 
@@ -24,7 +24,7 @@ export default function AuthPage() {
         Redirecting to Google…
       </p>
       <button
-        onClick={() => signInWithGooglePopup()}
+        onClick={() => signInWithGoogle()}
         className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
         Sign in with Google

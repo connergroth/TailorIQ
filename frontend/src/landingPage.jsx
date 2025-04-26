@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Edit, FileText, FolderOpen, Moon, PenTool, Rocket, Search, Star, Sun } from 'lucide-react';
-import { useUser } from '../contexts/UserContext';
+import { useUser } from './contexts/UserContext';
+
 // Smooth scroll function
 const smoothScroll = (e, targetId) => {
   e.preventDefault();
