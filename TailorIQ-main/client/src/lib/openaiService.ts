@@ -74,6 +74,39 @@ export async function getTextImprovement(section: string, text: string, context?
 }
 
 /**
+ * Gets resume insights from the AI
+ */
+export async function getResumeInsights(resumeData: Resume) {
+  try {
+    const response = await fetch('/api/resume/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resumeData })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error generating resume insights:", error);
+    return {
+      insights: [
+        {
+          title: "Resume Strength",
+          content: "Your resume has a clear structure which is positive."
+        },
+        {
+          title: "Area for Improvement",
+          content: "Consider adding more quantified achievements to make your impact clearer."
+        }
+      ]
+    };
+  }
+}
+
+/**
  * Sends a chat message to the AI assistant and gets a response
  */
 export async function sendChatMessage(
@@ -82,7 +115,7 @@ export async function sendChatMessage(
   instruction?: string
 ): Promise<ChatResponse> {
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch('/api/resume/chat-assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ resumeData, messages, instruction })
@@ -92,11 +125,12 @@ export async function sendChatMessage(
       throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    return data.response || data; // Handle different response formats
   } catch (error) {
     console.error("Error processing chat message:", error);
     return {
-      message: "I'm having trouble connecting to the AI service right now. Please try again later."
+      message: "I'm having trouble connecting to the AI service right now. Please try again later or ask a different question."
     };
   }
 }

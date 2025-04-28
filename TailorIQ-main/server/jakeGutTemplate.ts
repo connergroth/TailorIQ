@@ -3,24 +3,6 @@ import { Resume } from "@shared/schema";
 
 // Jake Gutierrez's resume template based on the LaTeX format provided
 export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}): string {
-  // Function to get font family CSS
-  const getFontFamily = (fontFamily: string): string => {
-    switch (fontFamily) {
-      case 'times':
-        return "'Times New Roman', Times, serif";
-      case 'calibri':
-        return "Calibri, 'Segoe UI', sans-serif";
-      case 'arial':
-        return "Arial, Helvetica, sans-serif";
-      case 'garamond':
-        return "Garamond, Georgia, serif";
-      case 'helvetica':
-        return "Helvetica, Arial, sans-serif";
-      default:
-        return "'Times New Roman', Times, serif";
-    }
-  };
-
   // Use settings or defaults
   const fontSize = settings.fontSize || 11;
   const fontFamily = settings.fontFamily || 'times';
@@ -28,9 +10,13 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
   const paperSize = settings.paperSize || 'letter';
   const autoAdjust = settings.autoAdjust !== undefined ? settings.autoAdjust : true;
 
+  // Calculate dynamic font sizing based on content length
+  const dynamicFontSize = getDynamicFontSize(resumeData, fontSize);
+  const actualFontSize = autoAdjust ? dynamicFontSize : fontSize;
+
   return `
     <style>
-      /* Reset and base styles */
+      /* Reset and base styles following Jake's LaTeX template */
       * {
         box-sizing: border-box;
         margin: 0;
@@ -40,15 +26,10 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       body {
         font-family: ${getFontFamily(fontFamily)};
         color: #000;
-        font-size: ${fontSize}pt;
+        font-size: ${actualFontSize}pt;
         line-height: ${lineSpacing};
         max-width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
-      }
-      
-      .resume-container {
-        max-width: 100%;
-        margin: 0 auto;
-        padding: 0;
+        padding: 0.6in;
       }
       
       a {
@@ -59,11 +40,11 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       /* Header section */
       .header {
         text-align: center;
-        margin-bottom: ${fontSize * 0.9}pt;
+        margin-bottom: ${actualFontSize * 0.7}pt;
       }
       
       .header h1 {
-        font-size: ${fontSize * 2}pt;
+        font-size: ${actualFontSize * 2}pt;
         font-weight: bold;
         text-transform: uppercase;
         margin: 0;
@@ -76,7 +57,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
         flex-wrap: wrap;
         gap: 8pt;
         margin-top: 6pt;
-        font-size: ${fontSize * 0.9}pt;
+        font-size: ${actualFontSize * 0.9}pt;
       }
       
       .contact-divider {
@@ -85,23 +66,23 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       
       /* Section styles */
       .section {
-        margin-bottom: ${fontSize * 0.9}pt;
+        margin-bottom: ${actualFontSize * 0.8}pt;
         page-break-inside: avoid;
       }
       
       .section-heading {
-        font-size: ${fontSize * 1.1}pt;
+        font-size: ${actualFontSize * 1.1}pt;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 0.5pt;
-        margin-bottom: ${fontSize * 0.3}pt;
+        margin-bottom: ${actualFontSize * 0.3}pt;
         border-bottom: 1px solid #000;
         padding-bottom: 2pt;
       }
       
       /* Experience and education items */
       .experience-item, .education-item {
-        margin-bottom: ${fontSize * 0.7}pt;
+        margin-bottom: ${actualFontSize * 0.6}pt;
         page-break-inside: avoid;
       }
       
@@ -126,14 +107,14 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       
       /* Lists */
       .achievements {
-        margin: 4pt 0 0 16pt;
+        margin: 3pt 0 0 16pt;
         padding-left: 6pt;
       }
       
       .achievements li {
-        margin-bottom: 2pt;
-        line-height: ${lineSpacing};
-        font-size: ${autoAdjust && resumeData.experience.length > 2 ? (fontSize * 0.9) : fontSize}pt;
+        margin-bottom: ${calculateMarginBottom(resumeData)}pt;
+        line-height: ${calculateLineHeight(resumeData, lineSpacing)};
+        font-size: ${calculateAchievementFontSize(resumeData, actualFontSize)}pt;
       }
       
       /* Skills section */
@@ -155,22 +136,6 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       .skills-list {
         flex: 1;
       }
-      
-      /* Automatic scaling for different content lengths */
-      ${autoAdjust ? `
-      @media print {
-        .achievements li {
-          margin-bottom: ${resumeData.experience.length > 3 ? '1pt' : '2pt'};
-          font-size: ${resumeData.experience.length > 3 ? (fontSize * 0.85) : (fontSize * 0.9)}pt;
-        }
-        .section-heading {
-          margin-bottom: ${resumeData.experience.length > 3 ? '2pt' : '3pt'};
-        }
-        .experience-item, .education-item {
-          margin-bottom: ${resumeData.experience.length > 3 ? '5pt' : '7pt'};
-        }
-      }
-      ` : ''}
     </style>
 
     <div class="resume-container">
@@ -205,7 +170,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
                 </div>
               </div>
               ${(edu.gpa || edu.additionalInfo) ? `
-                <div style="font-size: ${fontSize * 0.85}pt; margin-top: 2pt;">
+                <div style="font-size: ${actualFontSize * 0.85}pt; margin-top: 2pt;">
                   ${edu.gpa ? `GPA: ${edu.gpa}` : ''} 
                   ${(edu.gpa && edu.additionalInfo) ? ' | ' : ''}
                   ${edu.additionalInfo || ''}
@@ -233,7 +198,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
                   <div class="period">${exp.period}</div>
                 </div>
               </div>
-              ${exp.description ? `<div style="margin-top: 2pt; font-size: ${fontSize * 0.9}pt;">${exp.description}</div>` : ''}
+              ${exp.description ? `<div style="margin-top: 2pt; font-size: ${actualFontSize * 0.9}pt;">${exp.description}</div>` : ''}
               ${exp.achievements && exp.achievements.length > 0 ? `
                 <ul class="achievements">
                   ${exp.achievements.filter(achievement => achievement.trim()).map(achievement => `
@@ -247,7 +212,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       </div>
       ` : ''}
 
-      <!-- Skills Section -->
+      <!-- Technical Skills Section -->
       ${resumeData.skills.length > 0 ? `
       <div class="section">
         <h2 class="section-heading">Technical Skills</h2>
@@ -293,4 +258,71 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       ` : ''}
     </div>
   `;
+}
+
+// Font family helper function
+function getFontFamily(fontFamily: string): string {
+  switch (fontFamily) {
+    case 'times':
+      return "'Times New Roman', Times, serif";
+    case 'calibri':
+      return "Calibri, 'Segoe UI', sans-serif";
+    case 'arial':
+      return "Arial, Helvetica, sans-serif";
+    case 'garamond':
+      return "Garamond, Georgia, serif";
+    case 'helvetica':
+      return "Helvetica, Arial, sans-serif";
+    default:
+      return "'Times New Roman', Times, serif";
+  }
+}
+
+// Calculate dynamic font size based on content
+function getDynamicFontSize(resumeData: Resume, baseFontSize: number): number {
+  const contentLength = 
+    resumeData.summary.length + 
+    resumeData.experience.reduce((total, exp) => 
+      total + exp.description.length + 
+      exp.achievements.reduce((sum, achievement) => sum + achievement.length, 0), 0) + 
+    resumeData.education.reduce((total, edu) => 
+      total + (edu.additionalInfo ? edu.additionalInfo.length : 0), 0);
+  
+  if (contentLength > 5000) return baseFontSize * 0.85;
+  if (contentLength > 4000) return baseFontSize * 0.9;
+  if (contentLength > 3000) return baseFontSize * 0.95;
+  return baseFontSize;
+}
+
+// Calculate margin bottom for achievements
+function calculateMarginBottom(resumeData: Resume): number {
+  const totalAchievements = resumeData.experience.reduce(
+    (sum, exp) => sum + exp.achievements.length, 0
+  );
+  
+  if (totalAchievements > 15) return 1;
+  if (totalAchievements > 10) return 1.5;
+  return 2;
+}
+
+// Calculate line height for achievements
+function calculateLineHeight(resumeData: Resume, baseLineHeight: number): number {
+  const totalAchievements = resumeData.experience.reduce(
+    (sum, exp) => sum + exp.achievements.length, 0
+  );
+  
+  if (totalAchievements > 15) return baseLineHeight * 0.9;
+  if (totalAchievements > 10) return baseLineHeight * 0.95;
+  return baseLineHeight;
+}
+
+// Calculate achievement font size
+function calculateAchievementFontSize(resumeData: Resume, baseFontSize: number): number {
+  const totalAchievements = resumeData.experience.reduce(
+    (sum, exp) => sum + exp.achievements.length, 0
+  );
+  
+  if (totalAchievements > 15) return baseFontSize * 0.85;
+  if (totalAchievements > 10) return baseFontSize * 0.9;
+  return baseFontSize * 0.95;
 }

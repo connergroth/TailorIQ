@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, User, CheckCircle, Loader2 } from 'lucide-react';
+import { Bot, Send, User, CheckCircle, Loader2, LineChart, FileText } from 'lucide-react';
 import { Resume } from '@shared/schema';
 import { sendChatMessage } from "../lib/openaiService";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface AIAssistantChatProps {
   resumeData: Resume;
@@ -19,7 +20,7 @@ type MessageType = {
   text: string;
   timestamp: Date;
   processing?: boolean;
-  actionType?: 'suggestion' | 'info';
+  actionType?: 'suggestion' | 'info' | 'insight';
   actionContent?: any;
 };
 
@@ -28,7 +29,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     {
       id: 1,
       sender: 'assistant',
-      text: 'Hi there! I\'m your AI resume assistant. I can help improve your resume or answer questions about resume writing. What would you like help with today?',
+      text: 'Hi there! I\'m your AI resume assistant. I can help improve your resume content, provide insights on your experience, or answer questions about resume best practices. What would you like help with today?',
       timestamp: new Date(),
     }
   ]);
@@ -76,6 +77,8 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       
       if (userIntent.type === 'improve' && userIntent.section) {
         await handleImproveRequest(userIntent.section, userIntent.text || "", placeholderId);
+      } else if (userIntent.type === 'insight') {
+        await handleInsightRequest(inputText, placeholderId);
       } else if (userIntent.type === 'question') {
         await handleQuestionRequest(inputText, placeholderId);
       } else {
@@ -109,14 +112,14 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
 
   // Analyze user input to determine intent
   const analyzeUserIntent = (text: string): { 
-    type: 'improve' | 'question' | 'general'; 
+    type: 'improve' | 'question' | 'insight' | 'general'; 
     section?: string; 
     text?: string; 
   } => {
     const textLower = text.toLowerCase();
     
     // Check for improvement requests
-    if (textLower.includes('improve') || textLower.includes('enhance') || textLower.includes('better') || textLower.includes('update') || textLower.includes('fix') || textLower.includes('optimize')) {
+    if (textLower.includes('improve') || textLower.includes('enhance') || textLower.includes('better') || textLower.includes('update') || textLower.includes('fix') || textLower.includes('optimize') || textLower.includes('rewrite')) {
       // Check which section is mentioned
       if (textLower.includes('summary') || textLower.includes('profile') || textLower.includes('objective')) {
         return { type: 'improve', section: 'summary', text: resumeData.summary };
@@ -147,6 +150,11 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
           return { type: 'improve', section: 'education', text: resumeData.education[0].additionalInfo || '' };
         }
       }
+    }
+    
+    // Check for insight requests
+    if (textLower.includes('analyze') || textLower.includes('insight') || textLower.includes('review') || textLower.includes('evaluate') || textLower.includes('assess') || textLower.includes('feedback')) {
+      return { type: 'insight' };
     }
     
     // Check for questions
@@ -217,6 +225,53 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       setMessages(prev => prev.map(msg => 
         msg.id === placeholderId 
           ? { ...msg, text: "I couldn't generate an improvement for this section. Could you provide more details about what you'd like to improve?", processing: false } 
+          : msg
+      ));
+    }
+  };
+
+  // Handle insight generation requests
+  const handleInsightRequest = async (text: string, placeholderId: number) => {
+    try {
+      const messageHistory = messages
+        .filter(msg => !msg.processing)
+        .map(msg => ({
+          role: msg.sender,
+          content: msg.text
+        }));
+      
+      // Specific instruction for insights
+      const response = await sendChatMessage(
+        resumeData,
+        [...messageHistory, {
+          role: 'user',
+          content: text
+        }],
+        "Analyze the resume and provide specific, actionable insights about its strengths and areas for improvement. Focus on the overall impact, content gaps, and ATS optimization."
+      );
+      
+      // Update placeholder with insight message
+      setMessages(prev => prev.map(msg => 
+        msg.id === placeholderId 
+          ? { 
+              ...msg, 
+              text: response.message,
+              processing: false,
+              actionType: 'insight',
+              actionContent: { 
+                insights: response.suggestedActions?.map(action => ({
+                  title: action.targetSection || "Resume Insight",
+                  content: action.suggestedContent || action.explanation || ""
+                })) || []
+              }
+            } 
+          : msg
+      ));
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === placeholderId 
+          ? { ...msg, text: "I couldn't generate insights at the moment. Please try a different question.", processing: false } 
           : msg
       ));
     }
@@ -350,22 +405,50 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     });
   };
 
+  // Generate resume insights
+  const generateInsights = async () => {
+    // Add a placeholder message for the assistant
+    const placeholderId = Date.now();
+    const placeholderMessage: MessageType = {
+      id: placeholderId,
+      sender: 'assistant',
+      text: 'Analyzing your resume to provide insights...',
+      timestamp: new Date(),
+      processing: true,
+    };
+    setMessages(prev => [...prev, placeholderMessage]);
+    setIsProcessing(true);
+    
+    try {
+      await handleInsightRequest("Please provide a comprehensive analysis of my resume with insights on strengths, weaknesses, and areas for improvement", placeholderId);
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === placeholderId 
+          ? { ...msg, text: "I couldn't generate insights at the moment. Please try again later.", processing: false } 
+          : msg
+      ));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 border-b">
-          <div className="flex items-center">
-            <Bot className="h-5 w-5 text-primary mr-2" />
-            <h2 className="text-lg font-semibold">AI Resume Assistant</h2>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
-          </Button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="flex items-center">
+            <Bot className="h-5 w-5 mr-2 text-primary" />
+            AI Resume Assistant
+          </DialogTitle>
+          <DialogDescription>
+            Get help improving your resume content and answering your questions
+          </DialogDescription>
+        </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6">
           {messages.map((message) => (
             <div 
               key={message.id} 
@@ -427,6 +510,26 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                       )}
                     </div>
                   )}
+
+                  {/* Special formatting for insight messages */}
+                  {message.sender === 'assistant' && message.actionType === 'insight' && message.actionContent?.insights && (
+                    <div className="mt-3 space-y-2">
+                      {message.actionContent.insights.length > 0 && (
+                        <div className="border-t border-gray-200 pt-2 mt-2">
+                          <div className="text-sm font-medium text-gray-600 mb-1 flex items-center">
+                            <LineChart className="h-4 w-4 mr-1" />
+                            Insights Summary
+                          </div>
+                          {message.actionContent.insights.map((insight: any, idx: number) => (
+                            <div key={idx} className="text-sm mt-2">
+                              <span className="font-medium">{insight.title}: </span>
+                              {insight.content}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -440,7 +543,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Type your message here... (e.g., 'Improve my summary' or 'How long should my resume be?')"
+              placeholder="Type your message here... (e.g., 'Improve my summary' or 'How can I make my experience stand out?')"
               className="resize-none"
               disabled={isProcessing}
             />
@@ -454,10 +557,10 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
             </Button>
           </div>
           <div className="text-xs text-gray-500 mt-2">
-            Tip: Try asking to improve specific sections or for resume advice
+            Tip: You can ask for resume improvements, insights on your experience, or resume best practices
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -79,9 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: userId || "anonymous",
         title,
         template,
-        content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        content
       });
       
       res.status(201).json(resume);
@@ -137,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const response = await processAIChatMessage(resumeData, messages, instruction);
       
-      res.json({ response });
+      res.json(response);
     } catch (error) {
       console.error("Error processing chat message:", error);
       res.status(500).json({ 
