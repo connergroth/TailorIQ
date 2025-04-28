@@ -88,11 +88,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-solid border-[hsl(var(--border))];
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
     font-family: 'Inter', sans-serif;
   }
 
@@ -113,4 +113,73 @@
   .shimmer {
     @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent;
   }
+}
+
+/* Additional Landing Page Specific Styles */
+.bg-hero-pattern-light,
+.bg-hero-pattern-dark {
+  background-size: 100px 100px;
+  background-repeat: repeat;
+  background-position: center center;
+}
+
+/* Fix for mobile menu */
+.mobile-menu-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Fix for gradient backgrounds */
+.from-brand-indigo {
+  --tw-gradient-from: #4F46E5 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(79 70 229 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-brand-purple {
+  --tw-gradient-to: #7C3AED var(--tw-gradient-to-position);
+}
+
+.from-brand-purple {
+  --tw-gradient-from: #7C3AED var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(124 58 237 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-brand-indigo {
+  --tw-gradient-to: #4F46E5 var(--tw-gradient-to-position);
+}
+
+.via-brand-indigo {
+  --tw-gradient-stops: var(--tw-gradient-from), #4F46E5 var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+
+.to-brand-blue {
+  --tw-gradient-to: #3B82F6 var(--tw-gradient-to-position);
+}
+
+/* Fix for AnimatePresence and Framer Motion */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-out {
+  animation: fadeOut 0.3s ease-out forwards;
 }

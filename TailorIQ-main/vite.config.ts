@@ -23,6 +23,11 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
+  css: {
+    // Ensure the correct postcss.config.js is used
+    devSourcemap: true,
+    postcss: path.resolve(__dirname, "client", "postcss.config.js"),
+  },
   server: {
     proxy: {
       '/api': {
