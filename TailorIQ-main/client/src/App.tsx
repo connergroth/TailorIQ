@@ -80,7 +80,11 @@ function AppContent() {
 }
 
 function App() {
-  return <AppContent />;
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
 }
 
 export default App;
