@@ -82,7 +82,7 @@ export async function sendChatMessage(
   instruction?: string
 ): Promise<ChatResponse> {
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch('/api/resume/chat-assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ resumeData, messages, instruction })

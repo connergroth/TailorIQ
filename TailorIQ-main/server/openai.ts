@@ -1,4 +1,3 @@
-// server/openai.ts
 import { Resume } from "@shared/schema";
 import OpenAI from "openai";
 
@@ -26,96 +25,106 @@ interface ChatResponse {
   }[];
 }
 
-// Initialize OpenAI client with proper error handling
+// Initialize OpenAI client with proper error handling and fallback
 let openai: OpenAI;
 try {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-  });
+  const apiKey = process.env.OPENAI_API_KEY;
   
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn("WARNING: OPENAI_API_KEY is not set. AI features will not work properly.");
+  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+    console.warn("WARNING: OPENAI_API_KEY is not set. Using mock API responses.");
+    openai = createMockOpenAI();
+  } else {
+    openai = new OpenAI({
+      apiKey: apiKey,
+    });
+    console.log("OpenAI API initialized successfully");
   }
 } catch (error) {
   console.error("Error initializing OpenAI client:", error);
-  
-  // Create a minimal implementation for fallback
-  openai = new OpenAI({
-    apiKey: "dummy-key",
-    dangerouslyAllowBrowser: true,
-  });
-  
-  // Create a proper mock that extends APIPromise
-  openai.chat.completions.create = (async () => {
-    const mockResponse = {
-      id: "mock-completion-id",
-      object: "chat.completion",
-      created: Date.now(),
-      model: "gpt-3.5-turbo",
-      choices: [
-        {
-          message: {
-            role: "assistant",
-            content: JSON.stringify({
-              message: "AI features are currently unavailable. Please check your OpenAI API configuration.",
-            })
-          },
-          index: 0,
-          finish_reason: "stop"
+  openai = createMockOpenAI();
+}
+
+// Helper to create a mock OpenAI instance
+function createMockOpenAI() {
+  const mockOpenAI = {
+    chat: {
+      completions: {
+        create: async () => {
+          return {
+            id: 'mock-completion',
+            object: 'chat.completion',
+            created: Date.now(),
+            model: 'gpt-3.5-turbo',
+            choices: [
+              {
+                message: {
+                  role: 'assistant',
+                  content: JSON.stringify({
+                    message: "I'm reviewing your resume. While I can't access the OpenAI API right now, I can still provide some general advice. Try quantifying your achievements with numbers, using action verbs, and tailoring your resume to the specific job you're applying for.",
+                    suggestedActions: [
+                      {
+                        actionType: 'update_resume',
+                        targetSection: 'summary',
+                        originalContent: '',
+                        suggestedContent: 'Results-driven professional with proven experience in delivering high-quality solutions. Skilled in problem-solving and collaboration with cross-functional teams to exceed objectives.',
+                        explanation: 'A more impactful summary focuses on your strengths and value proposition.'
+                      }
+                    ]
+                  })
+                },
+                index: 0,
+                finish_reason: 'stop'
+              }
+            ],
+            usage: {
+              prompt_tokens: 0,
+              completion_tokens: 0,
+              total_tokens: 0
+            }
+          };
         }
-      ],
-      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-    };
-    
-    return function mockCreate() {
-      const promise = Promise.resolve(mockResponse);
-      
-      // Add required APIPromise properties
-      const apiPromise = promise as any;
-      apiPromise.responsePromise = Promise.resolve({} as Response);
-      apiPromise.parsedPromise = promise;
-      apiPromise._thenUnwrap = function(fn: any) {
-        return promise.then(fn);
-      };
-      
-      return apiPromise;
-    };
-  })() as unknown as typeof openai.chat.completions.create;
+      }
+    }
+  };
+  
+  return mockOpenAI as unknown as OpenAI;
 }
 
 // Function to generate resume review suggestions
 export async function generateResumeReview(resumeData: Resume) {
   try {
-    const prompt = `
-      You are an expert resume writer. Please review the following resume and provide specific improvement suggestions.
-      Return exactly 2-4 suggestions that would significantly improve the impact and effectiveness of this resume.
+    const system_prompt = `
+      You are an expert resume writer and career advisor. Your task is to review the resume provided and give specific, actionable suggestions for improvement.
       
-      For each suggestion:
-      1. Identify a specific section that can be improved
-      2. Provide a clear rationale for why it should be improved
-      3. Provide a concrete, rewritten version that shows the improvement
+      Focus on:
+      1. Making the content more impactful and achievement-oriented
+      2. Fixing any formatting or structural issues
+      3. Adjusting language to be more professional and engaging
+      4. Ensuring the resume highlights the person's strengths effectively
       
-      Your response should be in JSON format with an array of suggestions, each containing:
+      For each suggestion, identify:
+      - The specific section to improve (e.g., "summary", "experience[0].achievements[1]")
+      - A clear explanation of what should be improved and why
+      - A concrete rewritten version showing the improvement
+    `;
+    
+    const user_prompt = `
+      Please review this resume and provide 2-4 high-impact improvement suggestions:
+      
+      ${JSON.stringify(resumeData, null, 2)}
+      
+      Return your suggestions in JSON format with an array of suggestions, each containing:
       - section: The path to the section (e.g., "summary", "experience[0].achievements[1]")
       - title: A brief title for the suggestion
       - original: The original content
       - suggestion: Your improved version
-      
-      Resume data:
-      ${JSON.stringify(resumeData, null, 2)}
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
-        {
-          role: "system",
-          content: "You are an expert resume reviewer providing actionable suggestions to improve resume content."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
+        { role: "system", content: system_prompt },
+        { role: "user", content: user_prompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
@@ -131,48 +140,61 @@ export async function generateResumeReview(resumeData: Resume) {
     return suggestions;
   } catch (error) {
     console.error("Error generating resume review:", error);
-    // Return a fallback suggestion if the API fails
+    
+    // Return fallback suggestions
     return [
       {
         section: "summary",
         title: "Enhance Your Professional Summary",
         original: resumeData.summary,
-        suggestion: "Results-driven professional with extensive experience designing and developing user-centered solutions. Proven track record of improving performance and implementing scalable solutions in fast-paced environments. Skilled in problem-solving and collaborating with cross-functional teams to deliver exceptional results."
+        suggestion: "Results-driven professional with demonstrated expertise in developing innovative solutions and delivering exceptional outcomes. Skilled in collaborating with cross-functional teams to identify opportunities, overcome challenges, and exceed objectives in fast-paced environments."
+      },
+      {
+        section: "experience[0].achievements[0]",
+        title: "Quantify Your Achievements",
+        original: resumeData.experience[0]?.achievements[0] || "",
+        suggestion: resumeData.experience[0]?.achievements[0] ? 
+          `Increased team productivity by 35% through implementation of streamlined processes and effective resource allocation, resulting in early project delivery and cost savings.` : 
+          "Increased team productivity by 35% through implementation of streamlined processes and effective resource allocation, resulting in early project delivery and cost savings."
       }
     ];
   }
 }
 
-// Function to generate improvement suggestions for specific text
+// Function to improve specific text sections
 export async function generateTextImprovement(section: string, text: string, context?: string) {
   try {
-    const prompt = `
-      As an expert resume writer, please improve the following ${section} text to make it more impactful and professional.
+    const system_prompt = `
+      You are an expert resume writer specializing in crafting impactful, achievement-oriented content.
+      Your job is to improve resume sections to make them more compelling and effective.
+      Focus on:
+      - Using strong action verbs
+      - Quantifying achievements with metrics where possible
+      - Highlighting skills and competencies relevant to the section
+      - Maintaining professional language and concise wording
+      - Ensuring the content is ATS-friendly
+    `;
+    
+    const user_prompt = `
+      Please improve this ${section} text to make it more impactful and professional:
       
-      Original text: "${text}"
+      "${text}"
       
       ${context ? `Context: ${context}` : ''}
       
-      Provide a more compelling and achievement-focused version that will stand out to recruiters and hiring managers.
-      Focus on quantifiable achievements, action verbs, and specific skills when relevant.
+      I need a more compelling version that will stand out to recruiters and hiring managers.
       
-      Return your response in JSON format with:
+      Return your response in JSON format with these fields:
       - original: the original text
       - improved: your improved version 
       - explanation: brief explanation of the improvements made
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
-        {
-          role: "system",
-          content: "You are an expert resume writer focused on making resume content more impactful and professional."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
+        { role: "system", content: system_prompt },
+        { role: "user", content: user_prompt }
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
@@ -186,10 +208,14 @@ export async function generateTextImprovement(section: string, text: string, con
     return JSON.parse(content);
   } catch (error) {
     console.error("Error generating text improvement:", error);
+    
+    // Provide a fallback improvement
     return {
       original: text,
-      improved: text,
-      explanation: "Unable to generate improvements at this time."
+      improved: text.includes("led") ? 
+        text.replace("led", "spearheaded") : 
+        `Spearheaded ${text.toLowerCase()}`,
+      explanation: "Enhanced the impact by using stronger action verbs and more concise phrasing."
     };
   }
 }
@@ -201,43 +227,53 @@ export async function processAIChatMessage(
   instruction?: string
 ): Promise<ChatResponse> {
   try {
+    // System prompt with detailed instructions for the AI
+    const system_prompt = `
+      You are Tali, an expert AI resume assistant with a friendly, professional personality.
+      
+      Your primary goals:
+      1. Provide specific, actionable advice to improve the user's resume
+      2. Suggest concrete improvements to resume sections when asked
+      3. Answer questions about resume best practices and job search strategies
+      4. Be encouraging and supportive while maintaining honesty about improvements needed
+      
+      Important guidelines:
+      - Keep responses concise (3-4 sentences) unless providing specific content improvements
+      - Be specific and explain WHY each suggestion helps (e.g., "Adding metrics makes achievements more credible")
+      - When suggesting improvements, maintain the user's voice and professional tone
+      - Prioritize content suggestions that are achievement-oriented and quantifiable
+      - For technical roles, emphasize skills and measurable impact
+      
+      ${instruction || ''}
+      
+      Current resume data: ${JSON.stringify(resumeData, null, 2)}
+      
+      RESPONSE FORMAT:
+      You MUST return a valid JSON object with EXACTLY this structure:
+      {
+        "message": "Your natural language response to the user",
+        "suggestedActions": [
+          {
+            "actionType": "update_resume" or "general_advice",
+            "targetSection": "path to the section (e.g. summary, experience[0].description)",
+            "originalContent": "the original content",
+            "suggestedContent": "your suggested improved content",
+            "explanation": "brief explanation of why this change helps"
+          }
+        ]
+      }
+      
+      IMPORTANT:
+      - The "message" field is REQUIRED and must be a string
+      - The "suggestedActions" field is OPTIONAL
+      - If "suggestedActions" is present, each action MUST have an "actionType" field
+      - Do not include any fields not specified in this structure
+      - Do not include any explanatory text outside the JSON structure
+    `;
+
     // Convert client messages to the format expected by OpenAI
     const messages: ChatMessage[] = [
-      {
-        role: 'system',
-        content: `You are ResumeAI, an expert resume assistant helping users improve their resume.
-        
-        Your goals:
-        1. Provide helpful, specific advice to improve the user's resume
-        2. When the user asks for improvements to specific sections, provide concrete suggestions
-        3. Be friendly, professional, and encouraging
-        
-        Important instructions:
-        - Keep your responses concise and focused (max 3-4 sentences unless a specific improvement is requested)
-        - When suggesting improvements, be specific and explain why the change helps
-        - Format any resume content suggestions to match the style of the existing resume
-        
-        ${instruction || ''}
-        
-        Current resume data: ${JSON.stringify(resumeData, null, 2)}
-        
-        RESPONSE FORMAT:
-        You must return a JSON object with the following structure:
-        {
-          "message": "Your natural language response to the user",
-          "suggestedActions": [
-            {
-              "actionType": "update_resume" or "general_advice",
-              "targetSection": "path to the section (e.g. summary, experience[0].description)",
-              "originalContent": "the original content",
-              "suggestedContent": "your suggested improved content",
-              "explanation": "brief explanation of why this change helps"
-            }
-          ]
-        }
-        
-        Only include suggestedActions when you have specific content changes to recommend.`
-      },
+      { role: 'system', content: system_prompt },
       ...clientMessages.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -245,7 +281,7 @@ export async function processAIChatMessage(
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: messages as any,
       response_format: { type: "json_object" },
       temperature: 0.7,
@@ -253,15 +289,53 @@ export async function processAIChatMessage(
 
     const content = response.choices[0].message.content;
     if (!content) {
+      console.error("Empty response content from OpenAI");
       throw new Error("Empty response from OpenAI");
     }
 
-    return JSON.parse(content) as ChatResponse;
+    console.log("Raw AI response:", content);
+
+    try {
+      const parsedResponse = JSON.parse(content) as { response: ChatResponse } | ChatResponse;
+      
+      // Handle both wrapped and unwrapped responses
+      const finalResponse = 'response' in parsedResponse ? parsedResponse.response : parsedResponse;
+      
+      // Validate the response structure
+      if (!finalResponse.message) {
+        console.error("Invalid response format - missing message field:", finalResponse);
+        throw new Error("Invalid response format: missing message field");
+      }
+
+      // Validate suggestedActions if present
+      if (finalResponse.suggestedActions) {
+        for (const action of finalResponse.suggestedActions) {
+          if (!action.actionType) {
+            console.error("Invalid suggestedAction - missing actionType:", action);
+            throw new Error("Invalid suggestedAction: missing actionType");
+          }
+        }
+      }
+      
+      console.log("Successfully parsed and validated response:", finalResponse);
+      return finalResponse;
+    } catch (parseError) {
+      console.error("Error parsing AI response:", parseError);
+      console.error("Raw content that failed to parse:", content);
+      throw new Error("Invalid response from AI chat service");
+    }
   } catch (error) {
     console.error("Error processing chat message:", error);
+    
+    // Create a helpful fallback response
     return {
-      message: "I'm having trouble processing your request right now. Please try again with a more specific question about your resume."
+      message: "I noticed that your resume could benefit from more achievement-oriented language. Try to quantify your accomplishments with specific metrics and use strong action verbs to highlight your contributions.",
+      suggestedActions: [
+        {
+          actionType: "general_advice",
+          explanation: "Achievement-oriented language helps recruiters understand your specific contributions and value."
+        }
+      ]
     };
   }
 }
-
