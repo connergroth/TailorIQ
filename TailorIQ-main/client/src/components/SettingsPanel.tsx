@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResumeTemplate } from "@shared/schema";
@@ -33,11 +33,49 @@ export default function SettingsPanel({
   onSettingsChange
 }: SettingsPanelProps) {
   
+  const handleFontSizeChange = (value: number[]) => {
+    onSettingsChange({...settings, fontSize: value[0]});
+  };
+  
+  const handleFontFamilyChange = (value: string) => {
+    onSettingsChange({...settings, fontFamily: value});
+  };
+  
+  const handleLineSpacingChange = (value: number[]) => {
+    onSettingsChange({...settings, lineSpacing: value[0]});
+  };
+  
+  const handleAutoAdjustChange = (value: boolean) => {
+    onSettingsChange({...settings, autoAdjust: value});
+  };
+  
+  const handleATSModeChange = (value: boolean) => {
+    onSettingsChange({...settings, atsMode: value});
+  };
+  
+  const handlePaperSizeChange = (size: string) => {
+    onSettingsChange({...settings, paperSize: size});
+  };
+  
+  const handleFileFormatChange = (format: string) => {
+    onSettingsChange({...settings, fileFormat: format});
+  };
+  
+  const handleResetDefaults = () => {
+    onSettingsChange({
+      fontSize: 11,
+      fontFamily: "times",
+      lineSpacing: 1.15,
+      autoAdjust: true,
+      atsMode: true,
+      paperSize: "letter",
+      fileFormat: "pdf"
+    });
+  };
+  
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-6">Settings</h2>
-      
-      <Tabs defaultValue="templates">
+    <div className="p-4 h-full overflow-y-auto">
+      <Tabs defaultValue="templates" className="h-full">
         <TabsList className="mb-4 w-full">
           <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
           <TabsTrigger value="format" className="flex-1">Formatting</TabsTrigger>
@@ -45,7 +83,7 @@ export default function SettingsPanel({
         </TabsList>
         
         {/* Templates Tab */}
-        <TabsContent value="templates">
+        <TabsContent value="templates" className="h-[calc(100%-60px)] overflow-auto">
           <ResumeTemplates 
             activeTemplate={activeTemplate}
             onTemplateChange={onTemplateChange}
@@ -62,7 +100,7 @@ export default function SettingsPanel({
                 <Label htmlFor="font-family">Font Family</Label>
                 <Select 
                   value={settings.fontFamily} 
-                  onValueChange={(value) => onSettingsChange({...settings, fontFamily: value})}
+                  onValueChange={handleFontFamilyChange}
                 >
                   <SelectTrigger id="font-family">
                     <SelectValue placeholder="Select font" />
@@ -91,7 +129,7 @@ export default function SettingsPanel({
                   max={14} 
                   step={0.5} 
                   value={[settings.fontSize]} 
-                  onValueChange={(value) => onSettingsChange({...settings, fontSize: value[0]})}
+                  onValueChange={handleFontSizeChange}
                   className="w-full" 
                 />
               </div>
@@ -107,7 +145,7 @@ export default function SettingsPanel({
                   max={1.5} 
                   step={0.05} 
                   value={[settings.lineSpacing]} 
-                  onValueChange={(value) => onSettingsChange({...settings, lineSpacing: value[0]})}
+                  onValueChange={handleLineSpacingChange}
                   className="w-full" 
                 />
               </div>
@@ -122,7 +160,7 @@ export default function SettingsPanel({
                 <Switch 
                   id="auto-adjust" 
                   checked={settings.autoAdjust} 
-                  onCheckedChange={(value) => onSettingsChange({...settings, autoAdjust: value})}
+                  onCheckedChange={handleAutoAdjustChange}
                 />
               </div>
               
@@ -134,15 +172,14 @@ export default function SettingsPanel({
                 <Switch 
                   id="ats-mode" 
                   checked={settings.atsMode} 
-                  onCheckedChange={(value) => onSettingsChange({...settings, atsMode: value})}
+                  onCheckedChange={handleATSModeChange}
                 />
               </div>
               
               <Button 
                 className="w-full"
                 onClick={() => {
-                  // Save functionality could be added in the future
-                  // For now, settings are saved automatically via onChange
+                  onSettingsChange({...settings});
                 }}
               >
                 <Save className="mr-2 h-4 w-4" />
@@ -164,14 +201,16 @@ export default function SettingsPanel({
                   <Button 
                     variant="outline" 
                     className={`flex items-center justify-center py-6 ${settings.paperSize === 'letter' ? 'border-primary' : ''}`}
-                    onClick={() => onSettingsChange({...settings, paperSize: 'letter'})}
+                    onClick={() => handlePaperSizeChange('letter')}
+                    type="button"
                   >
                     Letter (8.5" × 11")
                   </Button>
                   <Button 
                     variant="outline" 
                     className={`flex items-center justify-center py-6 ${settings.paperSize === 'a4' ? 'border-primary' : ''}`}
-                    onClick={() => onSettingsChange({...settings, paperSize: 'a4'})}
+                    onClick={() => handlePaperSizeChange('a4')}
+                    type="button"
                   >
                     A4 (210mm × 297mm)
                   </Button>
@@ -184,21 +223,26 @@ export default function SettingsPanel({
                   <Button 
                     variant="outline" 
                     className={`flex items-center justify-center py-4 ${settings.fileFormat === 'pdf' ? 'border-primary' : ''}`}
-                    onClick={() => onSettingsChange({...settings, fileFormat: 'pdf'})}
+                    onClick={() => handleFileFormatChange('pdf')}
+                    type="button"
                   >
                     PDF
                   </Button>
                   <Button 
                     variant="outline" 
                     className={`flex items-center justify-center py-4 ${settings.fileFormat === 'docx' ? 'border-primary' : ''}`}
-                    onClick={() => onSettingsChange({...settings, fileFormat: 'docx'})}
+                    onClick={() => handleFileFormatChange('docx')}
+                    type="button"
+                    disabled={true}
                   >
                     DOCX
                   </Button>
                   <Button 
                     variant="outline" 
                     className={`flex items-center justify-center py-4 ${settings.fileFormat === 'txt' ? 'border-primary' : ''}`}
-                    onClick={() => onSettingsChange({...settings, fileFormat: 'txt'})}
+                    onClick={() => handleFileFormatChange('txt')}
+                    type="button"
+                    disabled={true}
                   >
                     TXT
                   </Button>
@@ -223,15 +267,8 @@ export default function SettingsPanel({
               
               <Button 
                 className="w-full"
-                onClick={() => onSettingsChange({
-                  fontSize: 11,
-                  fontFamily: "times",
-                  lineSpacing: 1.15,
-                  autoAdjust: true,
-                  atsMode: true,
-                  paperSize: "letter",
-                  fileFormat: "pdf"
-                })}
+                onClick={handleResetDefaults}
+                type="button"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Restore Default Settings

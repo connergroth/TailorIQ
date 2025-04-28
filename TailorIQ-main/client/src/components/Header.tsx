@@ -13,7 +13,7 @@ export default function Header({ onDownloadPDF, onAIAssistant, onOpenSettings, i
   return (
     <header className="bg-white border-b border-gray-200 py-3 px-6 flex items-center justify-between">
       <div className="flex items-center">
-        <div className="text-primary font-bold text-xl">Resumaker</div>
+        <div className="text-primary font-bold text-xl">TailorIQ</div>
         <div className="hidden md:block ml-10">
           <Button variant="outline" size="sm" className="mr-2" onClick={onOpenSettings}>
             <FileText className="h-4 w-4 mr-2" />

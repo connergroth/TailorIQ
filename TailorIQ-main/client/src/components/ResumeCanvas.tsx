@@ -1,4 +1,5 @@
 import { Resume, ResumeTemplate } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 interface ResumeCanvasProps {
   resumeData: Resume;
@@ -14,16 +15,42 @@ interface ResumeCanvasProps {
   };
 }
 
-export default function ResumeCanvas({ resumeData, template, settings = {
-  fontSize: 11,
-  fontFamily: "times",
-  lineSpacing: 1.15,
-  autoAdjust: true,
-  atsMode: true,
-  paperSize: "letter",
-  fileFormat: "pdf"
-} }: ResumeCanvasProps) {
-  // Function to get the font family CSS based on the selected font
+export default function ResumeCanvas({ 
+  resumeData, 
+  template, 
+  settings = {
+    fontSize: 11,
+    fontFamily: "times",
+    lineSpacing: 1.15,
+    autoAdjust: true,
+    atsMode: true,
+    paperSize: "letter",
+    fileFormat: "pdf"
+  }
+}: ResumeCanvasProps) {
+  const [scale, setScale] = useState(1);
+  
+  // Adjust scale based on container size to fit the page properly
+  useEffect(() => {
+    const updateScale = () => {
+      const container = document.getElementById('resume-preview-container');
+      if (container) {
+        const containerWidth = container.clientWidth;
+        const pageWidth = settings.paperSize === 'letter' ? 8.5 * 96 : 210 * 96 / 25.4; // Convert to pixels
+        const newScale = Math.min(1, (containerWidth - 40) / pageWidth); // 40px for padding
+        setScale(newScale);
+      }
+    };
+    
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    
+    return () => {
+      window.removeEventListener('resize', updateScale);
+    };
+  }, [settings.paperSize]);
+
+  // Function to get font family CSS based on the selected font
   const getFontFamily = (fontFamily: string): string => {
     switch (fontFamily) {
       case 'times':
@@ -46,6 +73,8 @@ export default function ResumeCanvas({ resumeData, template, settings = {
     fontFamily: getFontFamily(settings.fontFamily),
     fontSize: `${settings.fontSize}pt`,
     lineHeight: settings.lineSpacing.toString(),
+    transform: `scale(${scale})`,
+    transformOrigin: 'top center',
   };
 
   // A function to render different templates based on the template prop
@@ -243,7 +272,7 @@ export default function ResumeCanvas({ resumeData, template, settings = {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-sm font-bold text-gray-800">{exp.title}</h4>
-                    <h5 className="text-sm italic text-gray-700">{exp.company}, {exp.location}</h5>
+                    <h5 className="text-sm font-italic text-gray-700">{exp.company}, {exp.location}</h5>
                   </div>
                   <div className="text-xs text-gray-600">{exp.period}</div>
                 </div>
@@ -276,7 +305,7 @@ export default function ResumeCanvas({ resumeData, template, settings = {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-sm font-bold text-gray-800">{edu.degree} {edu.field && `in ${edu.field}`}</h4>
-                    <h5 className="text-sm italic text-gray-700">{edu.institution}</h5>
+                    <h5 className="text-sm font-italic text-gray-700">{edu.institution}</h5>
                   </div>
                   <div className="text-xs text-gray-600">{edu.period}</div>
                 </div>
@@ -628,7 +657,7 @@ export default function ResumeCanvas({ resumeData, template, settings = {
 
   return (
     <div 
-      className={`resume-page ${settings.paperSize === 'letter' ? 'w-[8.5in] h-[11in]' : 'w-[210mm] h-[297mm]'} bg-white shadow-md`} 
+      className={`resume-page ${settings.paperSize === 'letter' ? 'w-[8.5in] h-[11in]' : 'w-[210mm] h-[297mm]'} bg-white shadow-md mx-auto origin-top`} 
       id="resume-preview"
       style={resumeStyles}
     >

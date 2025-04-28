@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, User, CheckCircle } from 'lucide-react';
+import { Bot, Send, User, CheckCircle, Loader2 } from 'lucide-react';
 import { Resume } from '@shared/schema';
-import { getImprovement, sendChatMessage } from '@/lib/openai';
+import { sendChatMessage } from "../lib/openaiService";
 import { useToast } from "@/hooks/use-toast";
 
 interface AIAssistantChatProps {
@@ -28,7 +28,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     {
       id: 1,
       sender: 'assistant',
-      text: 'Hi there! I\'m your resume assistant. I can help you improve sections of your resume or answer questions about resume writing. What would you like help with today?',
+      text: 'Hi there! I\'m your AI resume assistant. I can help improve your resume or answer questions about resume writing. What would you like help with today?',
       timestamp: new Date(),
     }
   ]);
@@ -116,11 +116,11 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     const textLower = text.toLowerCase();
     
     // Check for improvement requests
-    if (textLower.includes('improve') || textLower.includes('enhance') || textLower.includes('better') || textLower.includes('update')) {
+    if (textLower.includes('improve') || textLower.includes('enhance') || textLower.includes('better') || textLower.includes('update') || textLower.includes('fix') || textLower.includes('optimize')) {
       // Check which section is mentioned
-      if (textLower.includes('summary')) {
+      if (textLower.includes('summary') || textLower.includes('profile') || textLower.includes('objective')) {
         return { type: 'improve', section: 'summary', text: resumeData.summary };
-      } else if (textLower.includes('experience')) {
+      } else if (textLower.includes('experience') || textLower.includes('job') || textLower.includes('work')) {
         // Find which experience item to improve
         for (let i = 0; i < resumeData.experience.length; i++) {
           const exp = resumeData.experience[i];
@@ -133,15 +133,19 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
           }
         }
         // Default to first experience if specific one not identified
-        return { 
-          type: 'improve', 
-          section: 'experience[0]', 
-          text: resumeData.experience[0].description || resumeData.experience[0].achievements.join('\n') 
-        };
+        if (resumeData.experience.length > 0) {
+          return { 
+            type: 'improve', 
+            section: 'experience[0]', 
+            text: resumeData.experience[0].description || resumeData.experience[0].achievements.join('\n') 
+          };
+        }
       } else if (textLower.includes('skill')) {
         return { type: 'improve', section: 'skills', text: resumeData.skills.join(', ') };
-      } else if (textLower.includes('education')) {
-        return { type: 'improve', section: 'education', text: resumeData.education[0].additionalInfo || '' };
+      } else if (textLower.includes('education') || textLower.includes('degree') || textLower.includes('school')) {
+        if (resumeData.education.length > 0) {
+          return { type: 'improve', section: 'education', text: resumeData.education[0].additionalInfo || '' };
+        }
       }
     }
     
@@ -163,21 +167,47 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       // If targeting a specific experience/education entry, provide more context
       if (section.startsWith('experience[')) {
         const index = parseInt(section.match(/\d+/)?.[0] || '0');
-        context = `Role: ${resumeData.experience[index].title} at ${resumeData.experience[index].company}`;
-        sectionToImprove = 'experience description';
+        if (resumeData.experience[index]) {
+          context = `Role: ${resumeData.experience[index].title} at ${resumeData.experience[index].company}`;
+          sectionToImprove = 'experience description';
+        }
       }
       
-      const response = await getImprovement(sectionToImprove, text || "", context || "");
+      if (!text || text.trim() === '') {
+        throw new Error("No content to improve");
+      }
+      
+      const messageHistory = messages
+        .filter(msg => !msg.processing)
+        .map(msg => ({
+          role: msg.sender,
+          content: msg.text
+        }));
+      
+      // Use the client-side sendChatMessage function instead of direct API call
+      const response = await sendChatMessage(
+        resumeData,
+        [...messageHistory, {
+          role: 'user',
+          content: `Please improve this ${sectionToImprove} content: "${text}" ${context ? `Context: ${context}` : ''}`
+        }],
+        `Improve the ${sectionToImprove} content. Return only the improved version.`
+      );
       
       // Update the placeholder message with the response
       setMessages(prev => prev.map(msg => 
         msg.id === placeholderId 
           ? { 
               ...msg, 
-              text: `I've analyzed your ${sectionToImprove} and have a suggestion:\n\n"${response.improved}"\n\n${response.explanation}`,
+              text: `I've analyzed your ${sectionToImprove} and have a suggestion:\n\n"${response.suggestedActions?.[0]?.suggestedContent || response.message}"\n\n${response.suggestedActions?.[0]?.explanation || "This improvement helps make your content more impactful and professional."}`,
               processing: false,
               actionType: 'suggestion',
-              actionContent: { original: text, improved: response.improved, section }
+              actionContent: { 
+                original: text, 
+                improved: response.suggestedActions?.[0]?.suggestedContent || response.message, 
+                section, 
+                explanation: response.suggestedActions?.[0]?.explanation 
+              }
             } 
           : msg
       ));
@@ -186,7 +216,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       console.error("Error improving text:", error);
       setMessages(prev => prev.map(msg => 
         msg.id === placeholderId 
-          ? { ...msg, text: "Sorry, I couldn't generate an improvement at this time. Please try again later.", processing: false } 
+          ? { ...msg, text: "I couldn't generate an improvement for this section. Could you provide more details about what you'd like to improve?", processing: false } 
           : msg
       ));
     }
@@ -201,7 +231,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       console.error("Error responding to question:", error);
       setMessages(prev => prev.map(msg => 
         msg.id === placeholderId 
-          ? { ...msg, text: "Sorry, I couldn't process your question at this time. Please try again later.", processing: false } 
+          ? { ...msg, text: "I couldn't find an answer to your question. Could you try rephrasing it?", processing: false } 
           : msg
       ));
     }
@@ -224,12 +254,12 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
         content: text
       });
       
-      // Send the chat request to the API
-      const response = await sendChatMessage({
+      // Use the client-side sendChatMessage function instead of direct API call
+      const response = await sendChatMessage(
         resumeData,
-        messages: messageHistory,
-        instruction: "Focus on providing specific, actionable advice to improve the resume."
-      });
+        messageHistory,
+        "Provide concise, specific advice to improve the resume. When suggesting improvements, explain why they matter."
+      );
       
       // Process the response
       if (response && response.message) {
@@ -242,10 +272,10 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                 processing: false,
                 actionType: response.suggestedActions && response.suggestedActions.length > 0 ? 'suggestion' : undefined,
                 actionContent: response.suggestedActions && response.suggestedActions.length > 0 ? {
-                  original: response.suggestedActions[0].originalContent,
-                  improved: response.suggestedActions[0].suggestedContent,
-                  section: response.suggestedActions[0].targetSection,
-                  explanation: response.suggestedActions[0].explanation
+                  original: response.suggestedActions[0].originalContent || "",
+                  improved: response.suggestedActions[0].suggestedContent || "",
+                  section: response.suggestedActions[0].targetSection || "",
+                  explanation: response.suggestedActions[0].explanation || ""
                 } : undefined
               } 
             : msg
@@ -257,7 +287,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       console.error("Error responding to general request:", error);
       setMessages(prev => prev.map(msg => 
         msg.id === placeholderId 
-          ? { ...msg, text: "Sorry, I couldn't process your request at this time. Please try again later.", processing: false } 
+          ? { ...msg, text: "I'm having trouble processing your request right now. Please try again later or ask a different question.", processing: false } 
           : msg
       ));
     }
@@ -290,7 +320,9 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     } else if (section === 'skills') {
       updatedResumeData.skills = improved.split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
     } else if (section === 'education') {
-      updatedResumeData.education[0].additionalInfo = improved;
+      if (updatedResumeData.education.length > 0) {
+        updatedResumeData.education[0].additionalInfo = improved;
+      }
     }
     
     // Update the resume data
@@ -367,10 +399,17 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                       : 'bg-gray-100 text-gray-800'
                   } ${message.processing ? 'opacity-70' : ''}`}
                 >
-                  <div className="whitespace-pre-line">{message.text}</div>
+                  {message.processing ? (
+                    <div className="flex items-center">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>{message.text}</span>
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-line">{message.text}</div>
+                  )}
                   
                   {/* Action buttons for suggestions */}
-                  {message.sender === 'assistant' && message.actionType === 'suggestion' && (
+                  {message.sender === 'assistant' && message.actionType === 'suggestion' && !message.processing && (
                     <div className="mt-3 flex justify-end">
                       {message.actionContent?.applied ? (
                         <div className="flex items-center text-green-600 text-sm">
@@ -381,7 +420,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                         <Button 
                           size="sm" 
                           onClick={() => applySuggestion(message.id)}
-                          className="text-xs"
+                          className="text-xs bg-green-600 hover:bg-green-700"
                         >
                           Apply This Suggestion
                         </Button>
