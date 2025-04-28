@@ -12,7 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export type SectionType = 
@@ -116,16 +116,15 @@ export default function ResumeMaker() {
     mutationFn: async () => {
       try {
         const response = await apiRequest("POST", "/api/resume/llm-review", { resumeData });
-        const data = await response.json();
-        return data.suggestions;
+        return response.json();
       } catch (error) {
         console.error("Error during LLM review request:", error);
         throw error;
       }
     },
-    onSuccess: (suggestions) => {
-      if (suggestions && suggestions.length > 0) {
-        setLlmSuggestions(suggestions);
+    onSuccess: (data) => {
+      if (data.suggestions && data.suggestions.length > 0) {
+        setLlmSuggestions(data.suggestions);
         setIsLLMModalOpen(true);
       } else {
         toast({
@@ -332,17 +331,6 @@ export default function ResumeMaker() {
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
-          <div className="flex justify-between items-center p-4 border-b">
-            <h2 className="text-2xl font-bold">Settings</h2>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsSettingsOpen(false)}
-              className="rounded-full"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
           <div className="overflow-y-auto h-full">
             <SettingsPanel 
               activeTemplate={activeTemplate}
@@ -386,5 +374,5 @@ export default function ResumeMaker() {
         </button>
       </div>
     </div>
-    );
-  }
+  );
+}

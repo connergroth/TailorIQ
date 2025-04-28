@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const response = await processAIChatMessage(resumeData, messages, instruction);
       
-      res.json({ response });
+      res.json(response);
     } catch (error) {
       console.error("Error processing chat message:", error);
       res.status(500).json({ 
