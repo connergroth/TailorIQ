@@ -2,91 +2,86 @@ import { useState } from "react";
 import { Resume, ResumeTemplate } from "@shared/schema";
 
 // Default resume data with sample content
-const defaultResumeData: Resume = {
+export const defaultResumeData: Resume = {
   personalInfo: {
-    firstName: "John",
-    lastName: "Smith",
-    title: "Senior Software Engineer",
-    email: "john.smith@example.com",
+    firstName: "Ronan",
+    lastName: "Healy",
+    title: "Software Engineer",
+    email: "ronan.healy@example.com",
     phone: "(555) 123-4567",
-    location: "San Francisco, CA",
-    linkedin: "linkedin.com/in/johnsmith",
-    portfolio: "johnsmith.dev"
+    location: "Boulder, CO",
+    linkedin: "linkedin.com/in/ronanhealy",
+    portfolio: "ronanhealy.dev"
   },
-  summary: "Innovative and deadline-driven Software Engineer with 8+ years of experience designing and developing user-centered digital/print marketing material from initial concept to final, polished deliverable. Proficient in developing databases, creating user interfaces, writing and testing codes, troubleshooting simple/complex issues, and implementing new features based on user feedback.",
+  summary: "Experienced software engineer with a strong background in full-stack development and cloud architecture. Proven track record of delivering scalable solutions and leading technical teams.",
   experience: [
     {
-      company: "TechCorp Inc.",
-      title: "Senior Software Engineer",
+      title: "Software Engineer",
+      company: "Tech Corp",
       location: "San Francisco, CA",
-      period: "Jan 2020 - Present",
-      description: "",
+      startDate: "2020-01",
+      endDate: "Present",
+      description: "Lead developer for cloud-based applications",
       achievements: [
-        "Led a team of 5 engineers to rebuild the company's flagship product, resulting in a 35% increase in user engagement",
-        "Implemented microservices architecture that improved system reliability by 99.9%",
-        "Mentored junior developers and conducted code reviews to maintain code quality"
+        "Architected and implemented microservices infrastructure",
+        "Reduced system latency by 40% through optimization",
+        "Mentored junior developers and conducted code reviews"
       ]
     },
     {
-      company: "InnoSoft Solutions",
       title: "Software Engineer",
+      company: "StartUp Inc",
       location: "San Francisco, CA",
-      period: "Mar 2017 - Dec 2019",
-      description: "",
+      startDate: "2018-01",
+      endDate: "2019-12",
+      description: "Full-stack development for web applications",
       achievements: [
-        "Developed RESTful APIs and microservices for the company's e-commerce platform",
-        "Reduced page load time by 40% through code optimization and implementing CDN solutions",
-        "Collaborated with UX designers to implement responsive and accessible user interfaces"
+        "Developed RESTful APIs serving 1M+ requests daily",
+        "Implemented CI/CD pipeline reducing deployment time by 60%",
+        "Collaborated with UX team to improve user experience"
       ]
     }
   ],
   education: [
     {
-      institution: "Stanford University",
-      degree: "Master of Science",
-      field: "Computer Science",
-      period: "2015 - 2017",
-      gpa: "3.8/4.0",
-      additionalInfo: ""
-    },
-    {
       institution: "University of California, Berkeley",
       degree: "Bachelor of Science",
-      field: "Software Engineering",
-      period: "2011 - 2015",
-      gpa: "3.7/4.0",
-      additionalInfo: "Graduated with Honors"
+      field: "Computer Science",
+      startDate: "2014-09",
+      endDate: "2018-05",
+      gpa: "3.8",
+      additionalInfo: "Dean's List, Computer Science Club President"
     }
   ],
   skills: [
     "JavaScript",
+    "TypeScript",
     "React",
     "Node.js",
     "Python",
     "AWS",
     "Docker",
+    "Kubernetes",
     "CI/CD",
-    "Microservices",
-    "MongoDB",
-    "GraphQL"
+    "Agile Methodologies"
   ],
   certifications: [
     {
       name: "AWS Certified Solutions Architect",
       issuer: "Amazon Web Services",
-      date: "2022"
+      date: "2021-06"
     },
     {
       name: "Google Cloud Professional Developer",
       issuer: "Google",
-      date: "2021"
-    },
-    {
-      name: "Certified Scrum Master",
-      issuer: "Scrum Alliance",
-      date: "2019"
+      date: "2020-03"
     }
-  ]
+  ],
+  targetJob: {
+    title: "Senior Software Engineer",
+    company: "Tech Company",
+    description: "Looking for an experienced software engineer to join our team. The ideal candidate should have strong experience in full-stack development, cloud architecture, and team leadership."
+  }
 };
 
 // Empty resume data for starting with a clean slate

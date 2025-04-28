@@ -6,7 +6,8 @@ import {
   Briefcase, 
   GraduationCap, 
   Wrench, 
-  Award 
+  Award,
+  Target
 } from "lucide-react";
 
 interface SidebarProps {
@@ -28,7 +29,8 @@ export default function Sidebar({
     { id: "experience", label: "Work Experience", icon: <Briefcase className="text-lg md:mr-3" /> },
     { id: "education", label: "Education", icon: <GraduationCap className="text-lg md:mr-3" /> },
     { id: "skills", label: "Skills", icon: <Wrench className="text-lg md:mr-3" /> },
-    { id: "certifications", label: "Certifications", icon: <Award className="text-lg md:mr-3" /> }
+    { id: "certifications", label: "Certifications", icon: <Award className="text-lg md:mr-3" /> },
+    { id: "targetJob", label: "Target Job", icon: <Target className="text-lg md:mr-3" /> }
   ];
 
   return (

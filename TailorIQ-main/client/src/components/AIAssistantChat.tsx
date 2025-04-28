@@ -192,14 +192,20 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
           content: msg.text
         }));
       
-      // Use the client-side sendChatMessage function instead of direct API call
+      // Use the client-side sendChatMessage function with improved prompting
       const response = await sendChatMessage(
         resumeData,
         [...messageHistory, {
           role: 'user',
           content: `Please improve this ${sectionToImprove} content: "${text}" ${context ? `Context: ${context}` : ''}`
         }],
-        `Improve the ${sectionToImprove} content. Return only the improved version.`
+        `Improve the ${sectionToImprove} content. For each improvement:
+        1. Explain why the change makes the content more impactful
+        2. Describe how it better highlights the candidate's achievements
+        3. Explain how it improves ATS compatibility
+        4. Provide specific examples of how the improved version is better
+        Also provide a brief insight summary of how this improvement fits into the overall resume strategy.
+        Return the improved version with detailed explanations for each change.`
       );
       
       // Update the placeholder message with the response
@@ -214,7 +220,11 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                 original: text, 
                 improved: response.suggestedActions?.[0]?.suggestedContent || response.message, 
                 section, 
-                explanation: response.suggestedActions?.[0]?.explanation 
+                explanation: response.suggestedActions?.[0]?.explanation,
+                insights: [{
+                  title: "Strategic Impact",
+                  content: response.suggestedActions?.[0]?.explanation || "This improvement aligns with industry best practices and enhances your resume's overall effectiveness."
+                }]
               }
             } 
           : msg
@@ -240,14 +250,20 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
           content: msg.text
         }));
       
-      // Specific instruction for insights
+      // Specific instruction for insights with improved prompting
       const response = await sendChatMessage(
         resumeData,
         [...messageHistory, {
           role: 'user',
           content: text
         }],
-        "Analyze the resume and provide specific, actionable insights about its strengths and areas for improvement. Focus on the overall impact, content gaps, and ATS optimization."
+        `Analyze the resume and provide specific, actionable insights. For each insight:
+        1. Explain why it's important for the candidate's target role
+        2. Provide specific examples of how to implement the improvement
+        3. Explain how it will impact the candidate's chances of getting interviews
+        4. Include industry-specific best practices
+        5. Explain how it improves ATS compatibility
+        Focus on the overall impact, content gaps, and ATS optimization.`
       );
       
       // Update placeholder with insight message
@@ -292,12 +308,11 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     }
   };
 
-  // Handle general requests with the AI chat API
+  // Handle general requests with improved prompting
   const handleGeneralRequest = async (text: string, placeholderId: number) => {
     try {
-      // Convert messages to the format expected by the API
       const messageHistory = messages
-        .filter(msg => !msg.processing) // Filter out processing messages
+        .filter(msg => !msg.processing)
         .map(msg => ({
           role: msg.sender,
           content: msg.text
@@ -309,15 +324,31 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
         content: text
       });
       
-      // Use the client-side sendChatMessage function instead of direct API call
+      // Use the client-side sendChatMessage function with improved prompting
       const response = await sendChatMessage(
         resumeData,
         messageHistory,
-        "Provide concise, specific advice to improve the resume. When suggesting improvements, explain why they matter."
+        `Provide concise, specific advice to improve the resume. For each suggestion:
+        1. Explain why the change is important
+        2. Provide specific examples of how to implement it
+        3. Explain how it will impact the candidate's chances
+        4. Include industry-specific best practices
+        5. Explain how it improves ATS compatibility
+        ${resumeData.targetJob ? `Consider the target job: ${resumeData.targetJob.title}${resumeData.targetJob.company ? ` at ${resumeData.targetJob.company}` : ''}. 
+        Job Description: ${resumeData.targetJob.description}
+        Make sure suggestions align with the job requirements and highlight relevant experience.` : ''}
+        Also provide a brief insight summary of how these suggestions fit into the overall resume strategy.
+        When suggesting improvements, explain why they matter and provide concrete examples.`
       );
       
       // Process the response
-      if (response && response.message) {
+      if (response?.message) {
+        // Check if the response contains actual suggestions or improvements
+        const hasSuggestions = response.suggestedActions?.length > 0;
+        const isGreetingOrPrompt = response.message.toLowerCase().includes('please provide') || 
+                                  response.message.toLowerCase().includes('could you') ||
+                                  response.message.toLowerCase().includes('what would you like');
+        
         // Update the placeholder message with the AI response
         setMessages(prev => prev.map(msg => 
           msg.id === placeholderId 
@@ -325,13 +356,22 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                 ...msg, 
                 text: response.message,
                 processing: false,
-                actionType: response.suggestedActions && response.suggestedActions.length > 0 ? 'suggestion' : undefined,
-                actionContent: response.suggestedActions && response.suggestedActions.length > 0 ? {
+                actionType: hasSuggestions ? 'suggestion' : (isGreetingOrPrompt ? undefined : 'insight'),
+                actionContent: hasSuggestions && response.suggestedActions ? {
                   original: response.suggestedActions[0].originalContent || "",
                   improved: response.suggestedActions[0].suggestedContent || "",
                   section: response.suggestedActions[0].targetSection || "",
-                  explanation: response.suggestedActions[0].explanation || ""
-                } : undefined
+                  explanation: response.suggestedActions[0].explanation || "",
+                  insights: [{
+                    title: "Strategic Impact",
+                    content: response.suggestedActions[0].explanation || "These improvements align with industry best practices and enhance your resume's overall effectiveness."
+                  }]
+                } : (isGreetingOrPrompt ? undefined : {
+                  insights: [{
+                    title: "Strategic Impact",
+                    content: response.message
+                  }]
+                })
               } 
             : msg
         ));
@@ -449,91 +489,93 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto p-6">
-          {messages.map((message) => (
-            <div 
-              key={message.id} 
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          <div className="space-y-6">
+            {messages.map((message) => (
               <div 
-                className={`flex gap-3 max-w-[80%] ${
-                  message.sender === 'user' 
-                    ? 'flex-row-reverse' 
-                    : 'flex-row'
-                }`}
+                key={message.id} 
+                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
+                  className={`flex gap-3 max-w-[80%] ${
                     message.sender === 'user' 
-                      ? 'bg-blue-100' 
-                      : 'bg-green-100'
+                      ? 'flex-row-reverse' 
+                      : 'flex-row'
                   }`}
                 >
-                  {message.sender === 'user' ? (
-                    <User className="h-4 w-4 text-blue-700" />
-                  ) : (
-                    <Bot className="h-4 w-4 text-green-700" />
-                  )}
-                </div>
-                
-                <div 
-                  className={`p-3 rounded-lg ${
-                    message.sender === 'user' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-800'
-                  } ${message.processing ? 'opacity-70' : ''}`}
-                >
-                  {message.processing ? (
-                    <div className="flex items-center">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span>{message.text}</span>
-                    </div>
-                  ) : (
-                    <div className="whitespace-pre-line">{message.text}</div>
-                  )}
+                  <div 
+                    className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
+                      message.sender === 'user' 
+                        ? 'bg-blue-100' 
+                        : 'bg-green-100'
+                    }`}
+                  >
+                    {message.sender === 'user' ? (
+                      <User className="h-4 w-4 text-blue-700" />
+                    ) : (
+                      <Bot className="h-4 w-4 text-green-700" />
+                    )}
+                  </div>
                   
-                  {/* Action buttons for suggestions */}
-                  {message.sender === 'assistant' && message.actionType === 'suggestion' && !message.processing && (
-                    <div className="mt-3 flex justify-end">
-                      {message.actionContent?.applied ? (
-                        <div className="flex items-center text-green-600 text-sm">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Applied
-                        </div>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          onClick={() => applySuggestion(message.id)}
-                          className="text-xs bg-green-600 hover:bg-green-700"
-                        >
-                          Apply This Suggestion
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Special formatting for insight messages */}
-                  {message.sender === 'assistant' && message.actionType === 'insight' && message.actionContent?.insights && (
-                    <div className="mt-3 space-y-2">
-                      {message.actionContent.insights.length > 0 && (
-                        <div className="border-t border-gray-200 pt-2 mt-2">
-                          <div className="text-sm font-medium text-gray-600 mb-1 flex items-center">
-                            <LineChart className="h-4 w-4 mr-1" />
-                            Insights Summary
+                  <div 
+                    className={`p-4 rounded-lg ${
+                      message.sender === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-100 text-gray-800'
+                    } ${message.processing ? 'opacity-70' : ''}`}
+                  >
+                    {message.processing ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span>{message.text}</span>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-line">{message.text}</div>
+                    )}
+                    
+                    {/* Action buttons for suggestions */}
+                    {message.sender === 'assistant' && message.actionType === 'suggestion' && !message.processing && (
+                      <div className="mt-4 flex justify-end">
+                        {message.actionContent?.applied ? (
+                          <div className="flex items-center text-green-600 text-sm">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Applied
                           </div>
-                          {message.actionContent.insights.map((insight: any, idx: number) => (
-                            <div key={idx} className="text-sm mt-2">
-                              <span className="font-medium">{insight.title}: </span>
-                              {insight.content}
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            onClick={() => applySuggestion(message.id)}
+                            className="text-xs bg-green-600 hover:bg-green-700"
+                          >
+                            Apply This Suggestion
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Special formatting for insight messages */}
+                    {message.sender === 'assistant' && message.actionType === 'insight' && !message.processing && (
+                      <div className="mt-4 space-y-3">
+                        {message.actionContent.insights.length > 0 && (
+                          <div className="border-t border-gray-200 pt-3 mt-3">
+                            <div className="text-sm font-medium text-gray-600 mb-2 flex items-center">
+                              <LineChart className="h-4 w-4 mr-1" />
+                              Insights Summary
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                            {message.actionContent.insights.map((insight: any, idx: number) => (
+                              <div key={idx} className="text-sm mt-3">
+                                <span className="font-medium">{insight.title}: </span>
+                                {insight.content}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
           <div ref={messagesEndRef} />
         </div>
         

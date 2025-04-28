@@ -7,9 +7,10 @@ import {
   Button,
   Label 
 } from "@/components/ui";
-import { PlusCircle, Trash2, MoveUp, MoveDown } from "lucide-react";
+import { PlusCircle, Trash2, MoveUp, MoveDown, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FormPanelProps {
   activeSection: SectionType;
@@ -640,6 +641,70 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
           </div>
         );
         
+      case 'targetJob':
+        return (
+          <div id="target-job-section">
+            <div className="pb-2 mb-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Target Job</h2>
+              <p className="text-sm text-gray-500">Enter the job you're targeting to get tailored suggestions</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="targetJobTitle">Job Title</Label>
+                <Input 
+                  id="targetJobTitle" 
+                  value={resumeData.targetJob?.title || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      title: e.target.value
+                    }
+                  })}
+                  placeholder="e.g., Senior Software Engineer"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="targetJobCompany">Company (Optional)</Label>
+                <Input 
+                  id="targetJobCompany" 
+                  value={resumeData.targetJob?.company || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      company: e.target.value
+                    }
+                  })}
+                  placeholder="e.g., Tech Company"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="targetJobDescription">Job Description</Label>
+                <Textarea 
+                  id="targetJobDescription" 
+                  value={resumeData.targetJob?.description || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      description: e.target.value
+                    }
+                  })}
+                  placeholder="Paste the job description here..."
+                  className="min-h-[200px]"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  The AI will use this information to provide tailored suggestions for your resume.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+        
       default:
         return <div>Select a section to edit</div>;
     }
@@ -647,7 +712,84 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
 
   return (
     <div className="p-6">
-      {renderSection()}
+      <Tabs defaultValue="resume" className="w-full">
+        <TabsList className="w-full mb-6">
+          <TabsTrigger value="resume" className="flex-1">
+            Resume Sections
+          </TabsTrigger>
+          <TabsTrigger value="job" className="flex-1">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Job Information
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="resume">
+          {renderSection()}
+        </TabsContent>
+
+        <TabsContent value="job">
+          <div id="target-job-section">
+            <div className="pb-2 mb-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Target Job</h2>
+              <p className="text-sm text-gray-500">Enter the job you're targeting to get tailored suggestions</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="targetJobTitle">Job Title</Label>
+                <Input 
+                  id="targetJobTitle" 
+                  value={resumeData.targetJob?.title || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      title: e.target.value
+                    }
+                  })}
+                  placeholder="e.g., Senior Software Engineer"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="targetJobCompany">Company (Optional)</Label>
+                <Input 
+                  id="targetJobCompany" 
+                  value={resumeData.targetJob?.company || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      company: e.target.value
+                    }
+                  })}
+                  placeholder="e.g., Tech Company"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="targetJobDescription">Job Description</Label>
+                <Textarea 
+                  id="targetJobDescription" 
+                  value={resumeData.targetJob?.description || ''} 
+                  onChange={(e) => setResumeData({
+                    ...resumeData,
+                    targetJob: {
+                      ...resumeData.targetJob,
+                      description: e.target.value
+                    }
+                  })}
+                  placeholder="Paste the job description here..."
+                  className="min-h-[200px]"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  The AI will use this information to provide tailored suggestions for your resume.
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

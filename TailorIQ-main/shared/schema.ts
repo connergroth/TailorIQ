@@ -51,6 +51,11 @@ export interface Resume {
     issuer: string;
     date: string;
   }>;
+  targetJob?: {
+    title: string;
+    company?: string;
+    description: string;
+  };
 }
 
 // Zod schemas for validation

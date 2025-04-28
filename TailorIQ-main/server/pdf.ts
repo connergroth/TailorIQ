@@ -28,28 +28,14 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
     // Set viewport size to ensure content fits properly
     await page.setViewport({ width: 1100, height: 1400 });
 
-    // First navigate to about:blank to ensure a clean state
-    await page.goto('about:blank');
-
-    // Set content to the HTML with longer timeout and wait for network idle
+    // Set content directly without navigating to about:blank first
     await page.setContent(htmlContent, { 
       waitUntil: ['networkidle0', 'domcontentloaded'],
       timeout: 60000  // Increase timeout to 60 seconds
     });
 
-    // Wait for content to be fully rendered
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Ensure the page is ready for PDF generation
-    await page.evaluate(() => {
-      return new Promise((resolve) => {
-        if (document.readyState === 'complete') {
-          resolve(true);
-        } else {
-          window.addEventListener('load', () => resolve(true));
-        }
-      });
-    });
+    // Wait for content to be fully rendered with a longer timeout
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Configure PDF options based on settings
     const pdfOptions: any = {
@@ -77,18 +63,16 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
     
     while (retries > 0) {
       try {
-        // Ensure we're on a valid page before generating PDF
-        const url = await page.url();
-        if (url === 'about:blank') {
-          throw new Error('Page not properly loaded');
-        }
+        // Wait for any remaining network requests to complete
+        await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
         
+        // Generate PDF
         pdfData = await page.pdf(pdfOptions);
         break;
       } catch (error) {
         retries--;
         if (retries === 0) throw error;
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer before retry
       }
     }
     

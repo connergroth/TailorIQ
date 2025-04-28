@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import TargetJobSection from '@/components/TargetJobSection';
 
 export type SectionType = 
   | "personal"
@@ -21,7 +22,8 @@ export type SectionType =
   | "experience"
   | "education"
   | "skills"
-  | "certifications";
+  | "certifications"
+  | "targetJob";
 
 export default function ResumeMaker() {
   const [activeSection, setActiveSection] = useState<SectionType>("personal");
@@ -322,7 +324,7 @@ export default function ResumeMaker() {
       {/* AI Chat Button (Fixed Position) */}
       <Button
         onClick={() => setIsAIChatOpen(true)}
-        className="fixed bottom-20 right-6 z-40 rounded-full w-12 h-12 shadow-lg lg:flex items-center justify-center hidden"
+        className="fixed bottom-6 right-6 z-40 rounded-full w-12 h-12 shadow-md bg-primary hover:bg-primary/90 text-white"
         size="icon"
       >
         <MessageCircle className="h-6 w-6" />
