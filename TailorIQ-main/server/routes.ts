@@ -79,9 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: userId || "anonymous",
         title,
         template,
-        content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        content
       });
       
       res.status(201).json(resume);
