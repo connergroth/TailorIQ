@@ -11,7 +11,7 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
 
     // Launch Puppeteer with more flexible configuration for Render deployment
     browser = await puppeteer.launch({
-      headless: true,
+      headless: true,  // Use headless mode
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -19,7 +19,7 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
         '--disable-extensions',
-        '--single-process' // Important for some cloud environments
+        '--single-process'
       ]
     });
 
@@ -28,10 +28,27 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
     // Set viewport size to ensure content fits properly
     await page.setViewport({ width: 1100, height: 1400 });
 
-    // Set content to the HTML with longer timeout
+    // First navigate to about:blank to ensure a clean state
+    await page.goto('about:blank');
+
+    // Set content to the HTML with longer timeout and wait for network idle
     await page.setContent(htmlContent, { 
-      waitUntil: 'networkidle0',
-      timeout: 30000 
+      waitUntil: ['networkidle0', 'domcontentloaded'],
+      timeout: 60000  // Increase timeout to 60 seconds
+    });
+
+    // Wait for content to be fully rendered
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Ensure the page is ready for PDF generation
+    await page.evaluate(() => {
+      return new Promise((resolve) => {
+        if (document.readyState === 'complete') {
+          resolve(true);
+        } else {
+          window.addEventListener('load', () => resolve(true));
+        }
+      });
     });
 
     // Configure PDF options based on settings
@@ -43,7 +60,8 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
         bottom: '0.5in',
         left: '0.5in'
       },
-      preferCSSPageSize: true
+      preferCSSPageSize: true,
+      timeout: 30000  // Add timeout for PDF generation
     };
     
     // Set paper size from settings
@@ -53,8 +71,30 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
       pdfOptions.format = 'A4';
     }
     
-    // Generate the PDF
-    const pdfData = await page.pdf(pdfOptions);
+    // Generate the PDF with retry logic
+    let retries = 3;
+    let pdfData;
+    
+    while (retries > 0) {
+      try {
+        // Ensure we're on a valid page before generating PDF
+        const url = await page.url();
+        if (url === 'about:blank') {
+          throw new Error('Page not properly loaded');
+        }
+        
+        pdfData = await page.pdf(pdfOptions);
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+      }
+    }
+    
+    if (!pdfData) {
+      throw new Error("Failed to generate PDF after multiple attempts");
+    }
     
     // Convert Uint8Array to Buffer
     const pdfBuffer = Buffer.from(pdfData);
