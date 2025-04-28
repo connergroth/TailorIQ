@@ -9,7 +9,7 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
     // Generate the HTML for the resume
     const htmlContent = generateResumeHTML(resumeData, template, settings);
 
-    // Launch Puppeteer with more flexible configuration
+    // Launch Puppeteer with more flexible configuration for Render deployment
     browser = await puppeteer.launch({
       headless: true,
       args: [
@@ -18,7 +18,8 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
-        '--disable-extensions'
+        '--disable-extensions',
+        '--single-process' // Important for some cloud environments
       ]
     });
 
@@ -120,6 +121,20 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
     @page {
       size: ${paperSize} portrait;
       margin: 0;
+    }
+    
+    /* Font size scaling for overflow prevention */
+    @media print {
+      html, body {
+        width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
+        height: ${paperSize === 'letter' ? '11in' : '297mm'};
+        overflow: hidden;
+      }
+      
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
     }
   `;
 

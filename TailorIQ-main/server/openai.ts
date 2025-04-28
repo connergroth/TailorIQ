@@ -1,3 +1,4 @@
+// server/openai.ts
 import { Resume } from "@shared/schema";
 import OpenAI from "openai";
 
@@ -7,9 +8,6 @@ import { dirname, resolve } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, '../.env') });
-
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 
 // Define interfaces for the chat functionality
 interface ChatMessage {
@@ -27,9 +25,63 @@ interface ChatResponse {
     explanation?: string;
   }[];
 }
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
-});
+
+// Initialize OpenAI client with proper error handling
+let openai: OpenAI;
+try {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || "",
+  });
+  
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("WARNING: OPENAI_API_KEY is not set. AI features will not work properly.");
+  }
+} catch (error) {
+  console.error("Error initializing OpenAI client:", error);
+  
+  // Create a minimal implementation for fallback
+  openai = new OpenAI({
+    apiKey: "dummy-key",
+    dangerouslyAllowBrowser: true,
+  });
+  
+  // Create a proper mock that extends APIPromise
+  openai.chat.completions.create = (async () => {
+    const mockResponse = {
+      id: "mock-completion-id",
+      object: "chat.completion",
+      created: Date.now(),
+      model: "gpt-3.5-turbo",
+      choices: [
+        {
+          message: {
+            role: "assistant",
+            content: JSON.stringify({
+              message: "AI features are currently unavailable. Please check your OpenAI API configuration.",
+            })
+          },
+          index: 0,
+          finish_reason: "stop"
+        }
+      ],
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    };
+    
+    return function mockCreate() {
+      const promise = Promise.resolve(mockResponse);
+      
+      // Add required APIPromise properties
+      const apiPromise = promise as any;
+      apiPromise.responsePromise = Promise.resolve({} as Response);
+      apiPromise.parsedPromise = promise;
+      apiPromise._thenUnwrap = function(fn: any) {
+        return promise.then(fn);
+      };
+      
+      return apiPromise;
+    };
+  })() as unknown as typeof openai.chat.completions.create;
+}
 
 // Function to generate resume review suggestions
 export async function generateResumeReview(resumeData: Resume) {
@@ -85,7 +137,7 @@ export async function generateResumeReview(resumeData: Resume) {
         section: "summary",
         title: "Enhance Your Professional Summary",
         original: resumeData.summary,
-        suggestion: "Results-driven Software Engineer with 8+ years of experience designing and developing user-centered applications that deliver exceptional user experiences. Proven track record of reducing system complexity, improving performance, and implementing scalable solutions in fast-paced environments. Expert in full-stack development, database design, and cloud architecture."
+        suggestion: "Results-driven professional with extensive experience designing and developing user-centered solutions. Proven track record of improving performance and implementing scalable solutions in fast-paced environments. Skilled in problem-solving and collaborating with cross-functional teams to deliver exceptional results."
       }
     ];
   }
@@ -208,7 +260,8 @@ export async function processAIChatMessage(
   } catch (error) {
     console.error("Error processing chat message:", error);
     return {
-      message: "I'm having trouble processing your request. Please try again with a more specific question about your resume."
+      message: "I'm having trouble processing your request right now. Please try again with a more specific question about your resume."
     };
   }
 }
+

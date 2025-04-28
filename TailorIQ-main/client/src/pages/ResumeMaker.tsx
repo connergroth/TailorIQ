@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import FormPanel from "@/components/FormPanel";
@@ -8,7 +8,6 @@ import AIAssistantChat from "@/components/AIAssistantChat";
 import SettingsPanel from "@/components/SettingsPanel";
 import useResumeData from "@/hooks/useResumeData";
 import { ResumeTemplate } from "@shared/schema";
-import { Separator } from "@/components/ui/separator";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +36,7 @@ export default function ResumeMaker() {
     suggestion: string;
   }[]>([]);
   
+  // Initialize settings with default values
   const [settings, setSettings] = useState({
     fontSize: 11,
     fontFamily: "times",
@@ -50,14 +50,37 @@ export default function ResumeMaker() {
   const { toast } = useToast();
   const { resumeData, setResumeData, activeTemplate, setActiveTemplate } = useResumeData();
 
+  // Load saved settings from localStorage if available
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('resumeSettings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
+      } catch (e) {
+        console.error("Error parsing saved settings:", e);
+      }
+    }
+  }, []);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('resumeSettings', JSON.stringify(settings));
+  }, [settings]);
+
   const generatePdfMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/resume/generate-pdf", { 
-        resumeData, 
-        template: activeTemplate,
-        settings
-      });
-      return response.blob();
+      try {
+        const response = await apiRequest("POST", "/api/resume/generate-pdf", { 
+          resumeData, 
+          template: activeTemplate,
+          settings
+        });
+        return response.blob();
+      } catch (error) {
+        console.error("Error during PDF generation request:", error);
+        throw error;
+      }
     },
     onSuccess: (blob) => {
       // Create a URL for the blob
@@ -65,7 +88,7 @@ export default function ResumeMaker() {
       // Create a link element
       const a = document.createElement("a");
       a.href = url;
-      a.download = `resume-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = `${resumeData.personalInfo.firstName}-${resumeData.personalInfo.lastName}-Resume.pdf`;
       // Append the link to the body
       document.body.appendChild(a);
       // Click the link
@@ -82,7 +105,7 @@ export default function ResumeMaker() {
     onError: (error) => {
       toast({
         title: "Error Generating PDF",
-        description: "An error occurred while generating your PDF.",
+        description: "An error occurred while generating your PDF. Please try again.",
         variant: "destructive",
       });
       console.error("PDF generation error:", error);
@@ -91,18 +114,30 @@ export default function ResumeMaker() {
 
   const llmReviewMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/resume/llm-review", { resumeData });
-      const data = await response.json();
-      return data.suggestions;
+      try {
+        const response = await apiRequest("POST", "/api/resume/llm-review", { resumeData });
+        const data = await response.json();
+        return data.suggestions;
+      } catch (error) {
+        console.error("Error during LLM review request:", error);
+        throw error;
+      }
     },
     onSuccess: (suggestions) => {
-      setLlmSuggestions(suggestions);
-      setIsLLMModalOpen(true);
+      if (suggestions && suggestions.length > 0) {
+        setLlmSuggestions(suggestions);
+        setIsLLMModalOpen(true);
+      } else {
+        toast({
+          title: "No Suggestions",
+          description: "Our AI didn't find any improvements to suggest. Your resume looks great!",
+        });
+      }
     },
     onError: (error) => {
       toast({
         title: "AI Review Failed",
-        description: "Unable to generate AI suggestions at this time.",
+        description: "Unable to generate AI suggestions at this time. Please try again later.",
         variant: "destructive",
       });
       console.error("LLM review error:", error);
@@ -110,15 +145,22 @@ export default function ResumeMaker() {
   });
 
   const handleDownloadPDF = () => {
+    // Validate resume data before generating PDF
+    if (!resumeData.personalInfo.firstName || !resumeData.personalInfo.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in your name before generating your resume.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     generatePdfMutation.mutate();
   };
 
   const handleAIAssistant = () => {
     // Use the new interactive chat assistant instead of the modal
     setIsAIChatOpen(true);
-    
-    // Legacy modal-based assistant (disabled)
-    // llmReviewMutation.mutate();
   };
 
   const handleApplySuggestion = (index: number) => {
@@ -142,7 +184,19 @@ export default function ResumeMaker() {
           updatedResumeData.experience[expIndex][field] = suggestion.suggestion;
         }
       }
-    } // Add other section handlers as needed
+    } else if (suggestion.section.startsWith("education")) {
+      const matches = suggestion.section.match(/education\[(\d+)\]\.(.+)/);
+      if (matches && matches.length >= 3) {
+        const eduIndex = parseInt(matches[1]);
+        const field = matches[2];
+        
+        if (updatedResumeData.education[eduIndex]) {
+          updatedResumeData.education[eduIndex][field] = suggestion.suggestion;
+        }
+      }
+    } else if (suggestion.section === "skills") {
+      updatedResumeData.skills = suggestion.suggestion.split(',').map((s: string) => s.trim());
+    }
 
     setResumeData(updatedResumeData);
     
@@ -175,7 +229,19 @@ export default function ResumeMaker() {
             updatedResumeData.experience[expIndex][field] = suggestion.suggestion;
           }
         }
-      } // Add other section handlers as needed
+      } else if (suggestion.section.startsWith("education")) {
+        const matches = suggestion.section.match(/education\[(\d+)\]\.(.+)/);
+        if (matches && matches.length >= 3) {
+          const eduIndex = parseInt(matches[1]);
+          const field = matches[2];
+          
+          if (updatedResumeData.education[eduIndex]) {
+            updatedResumeData.education[eduIndex][field] = suggestion.suggestion;
+          }
+        }
+      } else if (suggestion.section === "skills") {
+        updatedResumeData.skills = suggestion.suggestion.split(',').map((s: string) => s.trim());
+      }
     });
 
     setResumeData(updatedResumeData);
@@ -320,5 +386,5 @@ export default function ResumeMaker() {
         </button>
       </div>
     </div>
-  );
-}
+    );
+  }

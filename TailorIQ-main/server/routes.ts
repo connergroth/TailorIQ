@@ -51,6 +51,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Resume data and template are required" });
       }
       
+      console.log("Generating PDF with settings:", JSON.stringify(settings));
+      
       const pdfBuffer = await generatePDF(resumeData, template, settings);
       
       // Set the appropriate headers
@@ -61,23 +63,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(pdfBuffer);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      res.status(500).json({ message: "Error generating PDF" });
+      res.status(500).json({ 
+        message: "Error generating PDF", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
   app.post("/api/resume/save", async (req, res) => {
     try {
-      const { title, template, content } = req.body;
-      
-      // In a real authentication system, you would get the user ID from the session
-      const userId = "anonymous";
+      const { title, template, content, userId } = req.body;
       
       // Create resume with only the fields required by the schema
       const resume = await storage.createResume({
-        userId,
+        userId: userId || "anonymous",
         title,
         template,
-        content
+        content,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
       
       res.status(201).json(resume);

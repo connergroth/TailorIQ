@@ -1,3 +1,4 @@
+// server/jakeGutTemplate.ts
 import { Resume } from "@shared/schema";
 
 // Jake Gutierrez's resume template based on the LaTeX format provided
@@ -25,6 +26,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
   const fontFamily = settings.fontFamily || 'times';
   const lineSpacing = settings.lineSpacing || 1.15;
   const paperSize = settings.paperSize || 'letter';
+  const autoAdjust = settings.autoAdjust !== undefined ? settings.autoAdjust : true;
 
   return `
     <style>
@@ -34,6 +36,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
         margin: 0;
         padding: 0;
       }
+      
       body {
         font-family: ${getFontFamily(fontFamily)};
         color: #000;
@@ -41,11 +44,13 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
         line-height: ${lineSpacing};
         max-width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
       }
+      
       .resume-container {
         max-width: 100%;
         margin: 0 auto;
-        padding: 0.5in;
+        padding: 0;
       }
+      
       a {
         color: #000;
         text-decoration: underline;
@@ -54,59 +59,67 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
       /* Header section */
       .header {
         text-align: center;
-        margin-bottom: 16pt;
+        margin-bottom: ${fontSize * 0.9}pt;
       }
+      
       .header h1 {
-        font-size: 24pt;
+        font-size: ${fontSize * 2}pt;
         font-weight: bold;
         text-transform: uppercase;
         margin: 0;
         letter-spacing: 1pt;
       }
+      
       .contact-info {
         display: flex;
         justify-content: center;
         flex-wrap: wrap;
         gap: 8pt;
         margin-top: 6pt;
-        font-size: 10pt;
+        font-size: ${fontSize * 0.9}pt;
       }
+      
       .contact-divider {
         font-weight: normal;
       }
       
       /* Section styles */
       .section {
-        margin-bottom: 12pt;
+        margin-bottom: ${fontSize * 0.9}pt;
         page-break-inside: avoid;
       }
+      
       .section-heading {
-        font-size: 12pt;
+        font-size: ${fontSize * 1.1}pt;
         font-weight: bold;
         text-transform: uppercase;
-        letter-spacing: 1pt;
-        margin-bottom: 6pt;
+        letter-spacing: 0.5pt;
+        margin-bottom: ${fontSize * 0.3}pt;
         border-bottom: 1px solid #000;
         padding-bottom: 2pt;
       }
       
       /* Experience and education items */
       .experience-item, .education-item {
-        margin-bottom: 10pt;
+        margin-bottom: ${fontSize * 0.7}pt;
         page-break-inside: avoid;
       }
+      
       .item-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 2pt;
       }
+      
       .company, .institution {
         font-weight: bold;
       }
+      
       .position, .degree {
         font-style: italic;
       }
+      
       .period {
         text-align: right;
       }
@@ -116,27 +129,48 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
         margin: 4pt 0 0 16pt;
         padding-left: 6pt;
       }
+      
       .achievements li {
-        margin-bottom: 4pt;
-        line-height: 1.4;
+        margin-bottom: 2pt;
+        line-height: ${lineSpacing};
+        font-size: ${autoAdjust && resumeData.experience.length > 2 ? (fontSize * 0.9) : fontSize}pt;
       }
       
       /* Skills section */
       .skills-container {
         margin-top: 4pt;
       }
+      
       .skills-category {
         margin-bottom: 4pt;
         display: flex;
         align-items: flex-start;
       }
+      
       .skills-category-title {
         font-weight: bold;
         min-width: 100pt;
       }
+      
       .skills-list {
         flex: 1;
       }
+      
+      /* Automatic scaling for different content lengths */
+      ${autoAdjust ? `
+      @media print {
+        .achievements li {
+          margin-bottom: ${resumeData.experience.length > 3 ? '1pt' : '2pt'};
+          font-size: ${resumeData.experience.length > 3 ? (fontSize * 0.85) : (fontSize * 0.9)}pt;
+        }
+        .section-heading {
+          margin-bottom: ${resumeData.experience.length > 3 ? '2pt' : '3pt'};
+        }
+        .experience-item, .education-item {
+          margin-bottom: ${resumeData.experience.length > 3 ? '5pt' : '7pt'};
+        }
+      }
+      ` : ''}
     </style>
 
     <div class="resume-container">
@@ -148,9 +182,9 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
           ${resumeData.personalInfo.phone && resumeData.personalInfo.email ? ` <span class="contact-divider">|</span> ` : ''}
           ${resumeData.personalInfo.email ? `<a href="mailto:${resumeData.personalInfo.email}">${resumeData.personalInfo.email}</a>` : ''}
           ${(resumeData.personalInfo.phone || resumeData.personalInfo.email) && resumeData.personalInfo.linkedin ? ` <span class="contact-divider">|</span> ` : ''}
-          ${resumeData.personalInfo.linkedin ? `<a href="${resumeData.personalInfo.linkedin}">${resumeData.personalInfo.linkedin.replace('https://', '')}</a>` : ''}
+          ${resumeData.personalInfo.linkedin ? `<a href="${resumeData.personalInfo.linkedin}">${resumeData.personalInfo.linkedin.replace(/^https?:\/\//i, '')}</a>` : ''}
           ${(resumeData.personalInfo.phone || resumeData.personalInfo.email || resumeData.personalInfo.linkedin) && resumeData.personalInfo.portfolio ? ` <span class="contact-divider">|</span> ` : ''}
-          ${resumeData.personalInfo.portfolio ? `<a href="${resumeData.personalInfo.portfolio}">${resumeData.personalInfo.portfolio.replace('https://', '')}</a>` : ''}
+          ${resumeData.personalInfo.portfolio ? `<a href="${resumeData.personalInfo.portfolio}">${resumeData.personalInfo.portfolio.replace(/^https?:\/\//i, '')}</a>` : ''}
         </div>
       </div>
 
@@ -171,7 +205,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
                 </div>
               </div>
               ${(edu.gpa || edu.additionalInfo) ? `
-                <div style="font-size: 10pt; margin-top: 2pt;">
+                <div style="font-size: ${fontSize * 0.85}pt; margin-top: 2pt;">
                   ${edu.gpa ? `GPA: ${edu.gpa}` : ''} 
                   ${(edu.gpa && edu.additionalInfo) ? ' | ' : ''}
                   ${edu.additionalInfo || ''}
@@ -199,7 +233,7 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
                   <div class="period">${exp.period}</div>
                 </div>
               </div>
-              ${exp.description ? `<div style="margin-top: 2pt;">${exp.description}</div>` : ''}
+              ${exp.description ? `<div style="margin-top: 2pt; font-size: ${fontSize * 0.9}pt;">${exp.description}</div>` : ''}
               ${exp.achievements && exp.achievements.length > 0 ? `
                 <ul class="achievements">
                   ${exp.achievements.filter(achievement => achievement.trim()).map(achievement => `
@@ -209,30 +243,6 @@ export function generateJakeGutTemplate(resumeData: Resume, settings: any = {}):
               ` : ''}
             </div>
           `).join('')}
-        </div>
-      </div>
-      ` : ''}
-
-      <!-- Projects Section - if needed -->
-      ${resumeData.summary ? `
-      <div class="section">
-        <h2 class="section-heading">Projects</h2>
-        <div class="resume-sub-heading-list">
-          <div class="project-item">
-            <div class="item-header">
-              <div class="left-column">
-                <div><span class="project-title"><b>Resume Builder</b> | <i>React, Node.js, OpenAI API</i></span></div>
-              </div>
-              <div class="right-column">
-                <div class="period">April 2024 - Present</div>
-              </div>
-            </div>
-            <ul class="achievements">
-              <li>Developed a full-stack resume creation tool with customizable templates and AI-powered content assistance</li>
-              <li>Implemented dynamic content scaling and PDF export functionality with proper formatting</li>
-              <li>Integrated OpenAI API for contextual resume improvement suggestions and real-time feedback</li>
-            </ul>
-          </div>
         </div>
       </div>
       ` : ''}
