@@ -29,13 +29,34 @@ export default function Sidebar({
     { id: "experience", label: "Work Experience", icon: <Briefcase className="text-lg md:mr-3" /> },
     { id: "education", label: "Education", icon: <GraduationCap className="text-lg md:mr-3" /> },
     { id: "skills", label: "Skills", icon: <Wrench className="text-lg md:mr-3" /> },
-    { id: "certifications", label: "Certifications", icon: <Award className="text-lg md:mr-3" /> },
-    { id: "targetJob", label: "Target Job", icon: <Target className="text-lg md:mr-3" /> }
+    { id: "certifications", label: "Certifications", icon: <Award className="text-lg md:mr-3" /> }
   ];
 
   return (
     <div className="w-20 md:w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto hidden md:block">
       <div className="py-6">
+        {/* Job Information Section */}
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 mb-3 hidden md:block">
+          Job Information
+        </div>
+        <nav className="mb-6">
+          <a 
+            href="#targetJob" 
+            className={`sidebar-item flex items-center py-3 px-6 text-sm font-medium 
+              ${activeSection === "targetJob" 
+                ? 'active bg-blue-50 border-l-3 border-primary text-gray-900' 
+                : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            onClick={(e) => {
+              e.preventDefault();
+              onSectionChange("targetJob");
+            }}
+          >
+            <Target className="text-lg md:mr-3" />
+            <span className="hidden md:inline">Target Job</span>
+          </a>
+        </nav>
+
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 mb-3 hidden md:block">
           Resume Sections
         </div>

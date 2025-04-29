@@ -344,8 +344,15 @@ export default function ResumeMaker() {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3">
+      {/* Mobile bottom navigation bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 z-10">
+        <button 
+          className={`flex flex-col items-center text-xs ${activeSection === 'targetJob' ? 'text-primary' : 'text-gray-500'}`}
+          onClick={() => setActiveSection('targetJob')}
+        >
+          <i className="ri-target-line text-lg"></i>
+          <span>Target Job</span>
+        </button>
         <button 
           className={`flex flex-col items-center text-xs ${activeSection === 'personal' ? 'text-primary' : 'text-gray-500'}`}
           onClick={() => setActiveSection('personal')}
@@ -368,7 +375,7 @@ export default function ResumeMaker() {
           <span>Education</span>
         </button>
         <button 
-          className={`flex flex-col items-center text-xs`}
+          className={`flex flex-col items-center text-xs text-gray-500`}
           onClick={toggleMobilePreview}
         >
           <i className="ri-eye-line text-lg"></i>

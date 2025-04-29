@@ -74,12 +74,12 @@ export default function SettingsPanel({
   };
   
   return (
-    <div className="p-4 h-full overflow-y-auto">
+    <div className="p-4 h-full overflow-y-auto bg-white text-gray-900">
       <Tabs defaultValue="templates" className="h-full">
-        <TabsList className="mb-4 w-full">
-          <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
-          <TabsTrigger value="format" className="flex-1">Formatting</TabsTrigger>
-          <TabsTrigger value="export" className="flex-1">Export</TabsTrigger>
+        <TabsList className="mb-4 w-full bg-gray-100">
+          <TabsTrigger value="templates" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Templates</TabsTrigger>
+          <TabsTrigger value="format" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Formatting</TabsTrigger>
+          <TabsTrigger value="export" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">Export</TabsTrigger>
         </TabsList>
         
         {/* Templates Tab */}
@@ -92,22 +92,22 @@ export default function SettingsPanel({
         
         {/* Format Tab */}
         <TabsContent value="format">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Text Formatting</h3>
+          <Card className="p-6 bg-white text-gray-900">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Text Formatting</h3>
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="font-family">Font Family</Label>
+                <Label htmlFor="font-family" className="text-gray-900">Font Family</Label>
                 <Select 
                   value={settings.fontFamily} 
                   onValueChange={handleFontFamilyChange}
                 >
-                  <SelectTrigger id="font-family">
+                  <SelectTrigger id="font-family" className="bg-white border-gray-200">
                     <SelectValue placeholder="Select font" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectGroup>
-                      <SelectLabel>Professional Fonts</SelectLabel>
+                      <SelectLabel className="text-gray-700">Professional Fonts</SelectLabel>
                       <SelectItem value="times">Times New Roman</SelectItem>
                       <SelectItem value="calibri">Calibri</SelectItem>
                       <SelectItem value="arial">Arial</SelectItem>
@@ -120,7 +120,7 @@ export default function SettingsPanel({
               
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="font-size">Font Size: {settings.fontSize}pt</Label>
+                  <Label htmlFor="font-size" className="text-gray-900">Font Size: {settings.fontSize}pt</Label>
                   <span className="text-sm text-gray-500">10-14pt</span>
                 </div>
                 <Slider 
@@ -136,7 +136,7 @@ export default function SettingsPanel({
               
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="line-spacing">Line Spacing: {settings.lineSpacing.toFixed(2)}</Label>
+                  <Label htmlFor="line-spacing" className="text-gray-900">Line Spacing: {settings.lineSpacing.toFixed(2)}</Label>
                   <span className="text-sm text-gray-500">1.0-1.5</span>
                 </div>
                 <Slider 
@@ -154,7 +154,7 @@ export default function SettingsPanel({
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="auto-adjust" className="font-medium">Auto-adjust Content</Label>
+                  <Label htmlFor="auto-adjust" className="font-medium text-gray-900">Auto-adjust Content</Label>
                   <p className="text-sm text-gray-500">Automatically scale content to fit on one page</p>
                 </div>
                 <Switch 
@@ -166,7 +166,7 @@ export default function SettingsPanel({
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="ats-mode" className="font-medium">ATS-Friendly Mode</Label>
+                  <Label htmlFor="ats-mode" className="font-medium text-gray-900">ATS-Friendly Mode</Label>
                   <p className="text-sm text-gray-500">Optimize for Applicant Tracking Systems</p>
                 </div>
                 <Switch 
@@ -177,7 +177,7 @@ export default function SettingsPanel({
               </div>
               
               <Button 
-                className="w-full"
+                className="w-full bg-brand-purple hover:bg-brand-indigo"
                 onClick={() => {
                   onSettingsChange({...settings});
                 }}
@@ -191,16 +191,16 @@ export default function SettingsPanel({
         
         {/* Export Tab */}
         <TabsContent value="export">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Export Options</h3>
+          <Card className="p-6 bg-white text-gray-900">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Export Options</h3>
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label>Paper Size</Label>
+                <Label className="text-gray-900">Paper Size</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="outline" 
-                    className={`flex items-center justify-center py-6 ${settings.paperSize === 'letter' ? 'border-primary' : ''}`}
+                    className={`flex items-center justify-center py-6 bg-white ${settings.paperSize === 'letter' ? 'border-brand-purple text-brand-purple' : 'border-gray-200 text-gray-700'}`}
                     onClick={() => handlePaperSizeChange('letter')}
                     type="button"
                   >
@@ -208,7 +208,7 @@ export default function SettingsPanel({
                   </Button>
                   <Button 
                     variant="outline" 
-                    className={`flex items-center justify-center py-6 ${settings.paperSize === 'a4' ? 'border-primary' : ''}`}
+                    className={`flex items-center justify-center py-6 bg-white ${settings.paperSize === 'a4' ? 'border-brand-purple text-brand-purple' : 'border-gray-200 text-gray-700'}`}
                     onClick={() => handlePaperSizeChange('a4')}
                     type="button"
                   >
@@ -218,11 +218,11 @@ export default function SettingsPanel({
               </div>
               
               <div className="space-y-2">
-                <Label>File Format</Label>
+                <Label className="text-gray-900">File Format</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Button 
                     variant="outline" 
-                    className={`flex items-center justify-center py-4 ${settings.fileFormat === 'pdf' ? 'border-primary' : ''}`}
+                    className={`flex items-center justify-center py-4 bg-white ${settings.fileFormat === 'pdf' ? 'border-brand-purple text-brand-purple' : 'border-gray-200 text-gray-700'}`}
                     onClick={() => handleFileFormatChange('pdf')}
                     type="button"
                   >
@@ -230,7 +230,7 @@ export default function SettingsPanel({
                   </Button>
                   <Button 
                     variant="outline" 
-                    className={`flex items-center justify-center py-4 ${settings.fileFormat === 'docx' ? 'border-primary' : ''}`}
+                    className={`flex items-center justify-center py-4 bg-white ${settings.fileFormat === 'docx' ? 'border-brand-purple text-brand-purple' : 'border-gray-200 text-gray-700'}`}
                     onClick={() => handleFileFormatChange('docx')}
                     type="button"
                     disabled={true}
@@ -239,7 +239,7 @@ export default function SettingsPanel({
                   </Button>
                   <Button 
                     variant="outline" 
-                    className={`flex items-center justify-center py-4 ${settings.fileFormat === 'txt' ? 'border-primary' : ''}`}
+                    className={`flex items-center justify-center py-4 bg-white ${settings.fileFormat === 'txt' ? 'border-brand-purple text-brand-purple' : 'border-gray-200 text-gray-700'}`}
                     onClick={() => handleFileFormatChange('txt')}
                     type="button"
                     disabled={true}
@@ -266,7 +266,7 @@ export default function SettingsPanel({
               </div>
               
               <Button 
-                className="w-full"
+                className="w-full bg-brand-purple hover:bg-brand-indigo"
                 onClick={handleResetDefaults}
                 type="button"
               >

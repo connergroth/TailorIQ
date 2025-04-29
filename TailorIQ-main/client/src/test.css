@@ -1,0 +1,4 @@
+/* Test file for Tailwind */
+.test-container {
+  @apply bg-primary text-primary-foreground p-4 rounded-lg;
+} 

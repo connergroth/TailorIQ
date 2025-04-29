@@ -1,5 +1,7 @@
+/* Import fonts first */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
+/* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -87,10 +89,7 @@
 }
 
 @layer base {
-  * {
-    @apply border-solid border-[hsl(var(--border))];
-  }
-
+  /* Remove the global border styling that was causing purple outlines */
   body {
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
     font-family: 'Inter', sans-serif;
@@ -182,4 +181,49 @@
 
 .animate-out {
   animation: fadeOut 0.3s ease-out forwards;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.resume-page {
+  width: 8.5in;
+  height: 11in;
+  background-color: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-item.active {
+  background-color: #EFF6FF;
+  border-left: 3px solid #3B82F6;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #resume-preview, #resume-preview * {
+    visibility: visible;
+  }
+  #resume-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
 }

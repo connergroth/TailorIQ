@@ -657,7 +657,7 @@ export default function ResumeCanvas({
 
   return (
     <div 
-      className={`resume-page ${settings.paperSize === 'letter' ? 'w-[8.5in] h-[11in]' : 'w-[210mm] h-[297mm]'} bg-white shadow-md mx-auto origin-top`} 
+      className={`resume-page ${settings.paperSize === 'letter' ? 'w-[8.5in] h-[11in]' : 'w-[210mm] h-[297mm]'} bg-white text-gray-900 shadow-md mx-auto origin-top`} 
       id="resume-preview"
       style={resumeStyles}
     >

@@ -7,7 +7,7 @@ import {
   Button,
   Label 
 } from "@/components/ui";
-import { PlusCircle, Trash2, MoveUp, MoveDown, Briefcase } from "lucide-react";
+import { PlusCircle, Trash2, MoveUp, MoveDown, Briefcase, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -713,11 +713,12 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
   return (
     <div className="p-6">
       <Tabs defaultValue="resume" className="w-full">
-        <TabsList className="w-full mb-6">
-          <TabsTrigger value="resume" className="flex-1">
+        <TabsList className="w-full mb-6 bg-gray-100">
+          <TabsTrigger value="resume" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+            <FileText className="h-4 w-4 mr-2" />
             Resume Sections
           </TabsTrigger>
-          <TabsTrigger value="job" className="flex-1">
+          <TabsTrigger value="job" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">
             <Briefcase className="h-4 w-4 mr-2" />
             Job Information
           </TabsTrigger>
