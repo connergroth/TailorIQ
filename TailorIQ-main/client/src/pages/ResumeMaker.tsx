@@ -1,3 +1,4 @@
+// client/src/pages/ResumeMaker.tsx
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -6,15 +7,18 @@ import ResumeCanvas from "@/components/ResumeCanvas";
 import LLMAssistantModal from "@/components/LLMAssistantModal";
 import AIAssistantChat from "@/components/AIAssistantChat";
 import SettingsPanel from "@/components/SettingsPanel";
+import SavedResumesDialog from "@/components/SavedResumesDialog";
 import useResumeData from "@/hooks/useResumeData";
-import { ResumeTemplate } from "@shared/schema";
+import { Resume, ResumeTemplate } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import TargetJobSection from '@/components/TargetJobSection';
+import { MessageCircle, Save, FolderOpen } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { saveResumeToFirebase } from "@/lib/firebaseStorage";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export type SectionType = 
   | "personal"
@@ -31,6 +35,11 @@ export default function ResumeMaker() {
   const [isLLMModalOpen, setIsLLMModalOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [isSavedResumesOpen, setIsSavedResumesOpen] = useState(false);
+  const [resumeTitle, setResumeTitle] = useState("My Resume");
+  const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [llmSuggestions, setLlmSuggestions] = useState<{
     section: string;
     title: string;
@@ -70,14 +79,27 @@ export default function ResumeMaker() {
     localStorage.setItem('resumeSettings', JSON.stringify(settings));
   }, [settings]);
 
+  // PDF generation mutation with improved error handling
   const generatePdfMutation = useMutation({
     mutationFn: async () => {
       try {
+        // Enhanced logging for debugging
+        console.log("Starting PDF generation with data:", {
+          template: activeTemplate,
+          settings: settings
+        });
+        
         const response = await apiRequest("POST", "/api/resume/generate-pdf", { 
           resumeData, 
           template: activeTemplate,
           settings
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`PDF generation failed: ${response.status} ${errorText}`);
+        }
+        
         return response.blob();
       } catch (error) {
         console.error("Error during PDF generation request:", error);
@@ -87,21 +109,25 @@ export default function ResumeMaker() {
     onSuccess: (blob) => {
       // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
+      
       // Create a link element
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${resumeData.personalInfo.firstName}-${resumeData.personalInfo.lastName}-Resume.pdf`;
+      a.download = `${resumeData.personalInfo.firstName}-${resumeData.personalInfo.lastName}-Resume-${activeTemplate}.pdf`;
+      
       // Append the link to the body
       document.body.appendChild(a);
+      
       // Click the link
       a.click();
+      
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       toast({
         title: "PDF Generated Successfully",
-        description: "Your resume has been downloaded.",
+        description: `Your resume has been downloaded using the ${activeTemplate} template.`,
       });
     },
     onError: (error) => {
@@ -156,6 +182,9 @@ export default function ResumeMaker() {
       return;
     }
     
+    console.log(`Downloading PDF with template: ${activeTemplate}`);
+    
+    // Start PDF generation
     generatePdfMutation.mutate();
   };
 
@@ -263,14 +292,100 @@ export default function ResumeMaker() {
     setIsSettingsOpen(true);
   };
 
+  // Save resume to Firebase
+  const saveResumeMutation = useMutation({
+    mutationFn: async (options: { title: string, saveAs: boolean }) => {
+      setIsSaving(true);
+      try {
+        // If saveAs is true, we want to create a new resume, otherwise update existing
+        const resumeId = options.saveAs ? undefined : (currentResumeId || undefined);
+        
+        // Save to Firebase with fallback to localStorage
+        const id = await saveResumeToFirebase(
+          resumeData, 
+          activeTemplate, 
+          options.title,
+          resumeId
+        );
+        
+        // Update current resume ID
+        if (id) {
+          setCurrentResumeId(id);
+          return id;
+        }
+        
+        throw new Error("Failed to save resume");
+      } catch (error) {
+        console.error("Error saving resume:", error);
+        throw error;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    onSuccess: (resumeId) => {
+      toast({
+        title: "Resume Saved",
+        description: `Your resume has been saved successfully.`,
+      });
+      setIsSaveDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Saving Resume",
+        description: "An error occurred while saving your resume. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Save error:", error);
+    }
+  });
+
+  // Handle save button click
+  const handleSaveResume = () => {
+    // If we have a current resume ID, save directly, otherwise open dialog
+    if (currentResumeId) {
+      saveResumeMutation.mutate({ title: resumeTitle, saveAs: false });
+    } else {
+      setIsSaveDialogOpen(true);
+    }
+  };
+
+  // Handle save from dialog
+  const handleSaveFromDialog = (saveAs: boolean = false) => {
+    saveResumeMutation.mutate({ title: resumeTitle, saveAs });
+  };
+
+  // Open saved resumes dialog
+  const handleOpenSavedResumes = () => {
+    setIsSavedResumesOpen(true);
+  };
+
+  // Handle loading a saved resume
+  const handleLoadResume = (resumeContent: Resume, template: ResumeTemplate, id: string) => {
+    setResumeData(resumeContent);
+    setActiveTemplate(template);
+    setCurrentResumeId(id);
+    
+    // Update the resume title based on the loaded resume
+    setResumeTitle(resumeContent.personalInfo?.firstName && resumeContent.personalInfo?.lastName
+      ? `${resumeContent.personalInfo.firstName} ${resumeContent.personalInfo.lastName}'s Resume`
+      : "My Resume");
+    
+    toast({
+      title: "Resume Loaded",
+      description: "Your saved resume has been loaded successfully."
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Header 
         onDownloadPDF={handleDownloadPDF} 
         onAIAssistant={handleAIAssistant}
         onOpenSettings={handleOpenSettings}
+        onSaveResume={handleSaveResume}
         isPdfLoading={generatePdfMutation.isPending}
         isLlmLoading={llmReviewMutation.isPending}
+        isSaving={saveResumeMutation.isPending}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -284,6 +399,23 @@ export default function ResumeMaker() {
         
         {/* Form Panel */}
         <div className={`${isMobilePreviewVisible ? 'hidden' : 'block'} w-full lg:w-1/3 bg-white border-r border-gray-200 overflow-y-auto`}>
+          {/* Title and Open button temporarily commented out
+          <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-lg font-medium">
+              {resumeTitle}
+              {currentResumeId && <span className="text-xs text-gray-500 ml-2">(Saved)</span>}
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenSavedResumes}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Open
+            </Button>
+          </div>
+          */}
           <FormPanel
             activeSection={activeSection}
             resumeData={resumeData}
@@ -343,6 +475,64 @@ export default function ResumeMaker() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Save Dialog */}
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Save Resume</DialogTitle>
+          <DialogDescription>
+            Enter a title for your resume.
+          </DialogDescription>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="resume-title">Resume Title</Label>
+              <Input
+                id="resume-title"
+                placeholder="My Resume"
+                value={resumeTitle}
+                onChange={(e) => setResumeTitle(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsSaveDialogOpen(false)}
+              disabled={saveResumeMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <div className="space-x-2">
+              {currentResumeId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleSaveFromDialog(true)}
+                  disabled={saveResumeMutation.isPending}
+                >
+                  Save As New
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={() => handleSaveFromDialog(false)}
+                disabled={saveResumeMutation.isPending}
+              >
+                {saveResumeMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Saved Resumes Dialog - temporarily commented out
+      <SavedResumesDialog
+        isOpen={isSavedResumesOpen}
+        onClose={() => setIsSavedResumesOpen(false)}
+        onLoad={handleLoadResume}
+      />
+      */}
 
       {/* Mobile bottom navigation bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 z-10">

@@ -1,0 +1,13 @@
+{
+  "name": "tailoriq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TailorIQ - Resume creation tool",
+  "scripts": {
+    "start": "cd TailorIQ-main && npm start",
+    "dev": "cd TailorIQ-main && npm run dev",
+    "build": "cd TailorIQ-main && npm run build",
+    "build:client": "cd TailorIQ-main && npm run build:client",
+    "build:server": "cd TailorIQ-main && npm run build:server"
+  }
+} 

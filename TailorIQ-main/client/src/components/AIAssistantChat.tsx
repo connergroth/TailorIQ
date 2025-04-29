@@ -81,6 +81,8 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
         await handleInsightRequest(inputText, placeholderId);
       } else if (userIntent.type === 'question') {
         await handleQuestionRequest(inputText, placeholderId);
+      } else if (userIntent.type === 'add') {
+        await handleAddRequest(userIntent.section, userIntent.itemType, userIntent.text || "", placeholderId);
       } else {
         // General inquiry
         await handleGeneralRequest(inputText, placeholderId);
@@ -112,11 +114,23 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
 
   // Analyze user input to determine intent
   const analyzeUserIntent = (text: string): { 
-    type: 'improve' | 'question' | 'insight' | 'general'; 
+    type: 'improve' | 'question' | 'insight' | 'general' | 'add'; 
     section?: string; 
     text?: string; 
+    itemType?: 'skill' | 'education' | 'certification';
   } => {
     const textLower = text.toLowerCase();
+    
+    // Check for add requests
+    if (textLower.includes('add') || textLower.includes('include') || textLower.includes('create') || textLower.includes('insert') || textLower.includes('new')) {
+      if (textLower.includes('skill') || textLower.includes('ability') || textLower.includes('competency') || textLower.includes('proficiency')) {
+        return { type: 'add', section: 'skills', itemType: 'skill', text };
+      } else if (textLower.includes('education') || textLower.includes('degree') || textLower.includes('university') || textLower.includes('college') || textLower.includes('school')) {
+        return { type: 'add', section: 'education', itemType: 'education', text };
+      } else if (textLower.includes('certification') || textLower.includes('certificate') || textLower.includes('license') || textLower.includes('credential')) {
+        return { type: 'add', section: 'certifications', itemType: 'certification', text };
+      }
+    }
     
     // Check for improvement requests
     if (textLower.includes('improve') || textLower.includes('enhance') || textLower.includes('better') || textLower.includes('update') || textLower.includes('fix') || textLower.includes('optimize') || textLower.includes('rewrite')) {
@@ -344,7 +358,7 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
       // Process the response
       if (response?.message) {
         // Check if the response contains actual suggestions or improvements
-        const hasSuggestions = response.suggestedActions?.length > 0;
+        const hasSuggestions = Array.isArray(response.suggestedActions) && response.suggestedActions.length > 0;
         const isGreetingOrPrompt = response.message.toLowerCase().includes('please provide') || 
                                   response.message.toLowerCase().includes('could you') ||
                                   response.message.toLowerCase().includes('what would you like');
@@ -388,61 +402,199 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
     }
   };
 
+  // Handle requests to add new items to the resume
+  const handleAddRequest = async (section: string | undefined, itemType: string | undefined, text: string, placeholderId: number) => {
+    try {
+      if (!section || !itemType || !text || text.trim() === '') {
+        throw new Error("No item type or content to add");
+      }
+      
+      const messageHistory = messages
+        .filter(msg => !msg.processing)
+        .map(msg => ({
+          role: msg.sender,
+          content: msg.text
+        }));
+      
+      // Use the client-side sendChatMessage function with improved prompting
+      const response = await sendChatMessage(
+        resumeData,
+        [...messageHistory, {
+          role: 'user',
+          content: `Please add a new ${itemType} to the ${section} section: "${text}"`
+        }],
+        `Add a new ${itemType} to the ${section} section. For each suggestion:
+        1. Explain why the new ${itemType} is relevant to the ${section}
+        2. Provide specific examples of how the new ${itemType} fits into the ${section}
+        3. Explain how it improves ATS compatibility
+        Also provide a brief insight summary of how this new ${itemType} fits into the overall resume strategy.
+        Return the new ${itemType} with detailed explanations for each change.`
+      );
+      
+      let suggestedContent = '';
+      let explanation = '';
+      
+      if (response.suggestedActions && Array.isArray(response.suggestedActions) && response.suggestedActions.length > 0) {
+        suggestedContent = response.suggestedActions[0]?.suggestedContent || '';
+        explanation = response.suggestedActions[0]?.explanation || '';
+      } else {
+        suggestedContent = response.message;
+        explanation = "This addition will enhance your resume.";
+      }
+      
+      // Update the placeholder message with the response
+      setMessages(prev => prev.map(msg => 
+        msg.id === placeholderId 
+          ? { 
+              ...msg, 
+              text: `I can add this to your ${section}:\n\n"${suggestedContent}"\n\n${explanation}\n\nWould you like me to add this to your resume?`,
+              processing: false,
+              actionType: 'suggestion',
+              actionContent: { 
+                original: text, 
+                improved: suggestedContent, 
+                section, 
+                itemType,
+                explanation,
+                insights: [{
+                  title: "Strategic Impact",
+                  content: explanation || "This new addition aligns with industry best practices and enhances your resume's overall effectiveness."
+                }]
+              }
+            } 
+          : msg
+      ));
+      
+    } catch (error) {
+      console.error("Error adding new item:", error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === placeholderId 
+          ? { ...msg, text: "I couldn't add the new item. Could you provide more details about what you'd like to add?", processing: false } 
+          : msg
+      ));
+    }
+  };
+  
   // Apply a suggestion to the resume data
   const applySuggestion = (messageId: number) => {
     const message = messages.find(msg => msg.id === messageId);
     if (!message || !message.actionContent) return;
     
-    const { section, improved } = message.actionContent;
+    const { section, improved, itemType } = message.actionContent;
+    let updatedResumeData = { ...resumeData };
     
-    // Create a deep copy of resumeData to avoid direct state mutation
-    const updatedResumeData = JSON.parse(JSON.stringify(resumeData));
-    
-    // Handle different section types
-    if (section === 'summary') {
-      updatedResumeData.summary = improved;
-    } else if (section.startsWith('experience[')) {
-      const index = parseInt(section.match(/\d+/)?.[0] || '0');
-      if (updatedResumeData.experience[index]) {
-        // Determine if we're updating the description or achievements
-        if (message.actionContent.original === updatedResumeData.experience[index].description) {
-          updatedResumeData.experience[index].description = improved;
-        } else {
-          // Split by new lines to create separate achievements
-          updatedResumeData.experience[index].achievements = improved.split('\n').filter((item: string) => item.trim() !== '');
+    try {
+      // Check if this is an addition request
+      if (itemType && (itemType === 'skill' || itemType === 'education' || itemType === 'certification')) {
+        // Handle adding new items
+        if (section === 'skills' && itemType === 'skill') {
+          // For skills, split by commas or line breaks and add as individual skills
+          const newSkills = improved.split(/[,\n]/)
+            .map((skill: string) => skill.trim())
+            .filter((skill: string) => skill && !updatedResumeData.skills.includes(skill));
+            
+          updatedResumeData.skills = [...updatedResumeData.skills, ...newSkills];
+          
+          toast({
+            title: "Skills Added",
+            description: `Added ${newSkills.length} new skills to your resume.`,
+          });
+        } 
+        else if (section === 'education' && itemType === 'education') {
+          // Parse education details from the improved text
+          const lines = improved.split('\n').map((line: string) => line.trim()).filter(Boolean);
+          const newEducation = {
+            institution: lines.find((line: string) => line.includes("Institution:"))?.replace("Institution:", "").trim() || 
+                        lines[0] || "New Institution",
+            degree: lines.find((line: string) => line.includes("Degree:"))?.replace("Degree:", "").trim() || 
+                   lines[1] || "Degree",
+            field: lines.find((line: string) => line.includes("Field:"))?.replace("Field:", "").trim() || 
+                  lines[2] || "",
+            period: lines.find((line: string) => line.includes("Period:"))?.replace("Period:", "").trim() || 
+                   lines.find((line: string) => line.includes("-")) || "Current",
+            gpa: lines.find((line: string) => line.includes("GPA:"))?.replace("GPA:", "").trim() || "",
+            additionalInfo: lines.find((line: string) => line.includes("Additional:"))?.replace("Additional:", "").trim() || ""
+          };
+          
+          updatedResumeData.education = [...updatedResumeData.education, newEducation];
+          
+          toast({
+            title: "Education Added",
+            description: `Added ${newEducation.institution} to your education.`,
+          });
+        } 
+        else if (section === 'certifications' && itemType === 'certification') {
+          // Parse certification details
+          const lines = improved.split('\n').map((line: string) => line.trim()).filter(Boolean);
+          const newCertification = {
+            name: lines.find((line: string) => line.includes("Name:"))?.replace("Name:", "").trim() || 
+                 lines[0] || "New Certification",
+            issuer: lines.find((line: string) => line.includes("Issuer:"))?.replace("Issuer:", "").trim() || 
+                   lines[1] || "",
+            date: lines.find((line: string) => line.includes("Date:"))?.replace("Date:", "").trim() || 
+                 lines.find((line: string) => line.includes("-")) || "Current",
+            id: lines.find((line: string) => line.includes("ID:"))?.replace("ID:", "").trim() || "",
+            url: lines.find((line: string) => line.includes("URL:"))?.replace("URL:", "").trim() || ""
+          };
+          
+          updatedResumeData.certifications = [...updatedResumeData.certifications, newCertification];
+          
+          toast({
+            title: "Certification Added",
+            description: `Added ${newCertification.name} to your certifications.`,
+          });
+        }
+      } else {
+        // Handle standard improvement suggestions
+        if (section === 'summary') {
+          updatedResumeData.summary = improved;
+        } 
+        else if (section.startsWith('experience[')) {
+          const index = parseInt(section.match(/\d+/)?.[0] || '0');
+          if (updatedResumeData.experience[index]) {
+            // Check if the improved text is for description or achievements
+            if (improved.includes('\n-') || improved.includes('\n•')) {
+              // Looks like a list of bullet points, update achievements
+              updatedResumeData.experience[index].achievements = improved
+                .split(/\n-|\n•/)
+                .map((point: string) => point.trim())
+                .filter(Boolean);
+            } else {
+              // Update description
+              updatedResumeData.experience[index].description = improved;
+            }
+          }
+        } 
+        else if (section === 'skills') {
+          updatedResumeData.skills = improved.split(',').map((skill: string) => skill.trim());
         }
       }
-    } else if (section === 'skills') {
-      updatedResumeData.skills = improved.split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
-    } else if (section === 'education') {
-      if (updatedResumeData.education.length > 0) {
-        updatedResumeData.education[0].additionalInfo = improved;
+      
+      // Update resume data
+      setResumeData(updatedResumeData);
+      
+      // Update message to show success
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId
+          ? { ...msg, actionType: 'info', actionContent: { ...msg.actionContent, applied: true } }
+          : msg
+      ));
+      
+      // Show success toast if not already shown above
+      if (!itemType) {
+        toast({
+          title: "Changes Applied",
+          description: "Your resume has been updated with the suggested changes.",
+        });
       }
+    } catch (error) {
+      console.error("Error applying suggestion:", error);
+      toast({
+        title: "Error",
+        description: "There was an error applying the changes. Please try again.",
+        variant: "destructive"
+      });
     }
-    
-    // Update the resume data
-    setResumeData(updatedResumeData);
-    
-    // Update the message to show it was applied
-    setMessages(prev => prev.map(msg => 
-      msg.id === messageId 
-        ? { ...msg, actionContent: { ...msg.actionContent, applied: true } } 
-        : msg
-    ));
-    
-    // Add a confirmation message
-    setMessages(prev => [...prev, {
-      id: Date.now(),
-      sender: 'assistant',
-      text: 'I\'ve applied the changes to your resume. Is there anything else you\'d like help with?',
-      timestamp: new Date()
-    }]);
-    
-    toast({
-      title: "Changes Applied",
-      description: "The suggested improvements have been applied to your resume.",
-      variant: "default"
-    });
   };
 
   // Generate resume insights
@@ -477,18 +629,18 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center">
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 bg-white">
+        <DialogHeader className="px-6 py-4 border-b bg-white">
+          <DialogTitle className="flex items-center text-gray-900">
             <Bot className="h-5 w-5 mr-2 text-primary" />
             AI Resume Assistant
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600">
             Get help improving your resume content and answering your questions
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           <div className="space-y-6">
             {messages.map((message) => (
               <div 
@@ -516,10 +668,10 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
                     )}
                   </div>
                   
-                  <div 
+                  <div
                     className={`p-4 rounded-lg ${
                       message.sender === 'user' 
-                        ? 'bg-blue-600 text-white' 
+                        ? 'bg-blue-100 text-blue-800' 
                         : 'bg-gray-100 text-gray-800'
                     } ${message.processing ? 'opacity-70' : ''}`}
                   >
@@ -579,21 +731,21 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
           <div ref={messagesEndRef} />
         </div>
         
-        <div className="p-4 border-t">
+        <div className="border-t p-4 bg-white">
           <div className="flex gap-2">
             <Textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Type your message here... (e.g., 'Improve my summary' or 'How can I make my experience stand out?')"
-              className="resize-none"
+              className="resize-none bg-white text-gray-900 border-gray-300"
               disabled={isProcessing}
             />
             <Button 
               onClick={handleSendMessage} 
               disabled={isProcessing || !inputText.trim()}
               size="icon"
-              className="h-auto"
+              className="h-auto bg-blue-600 hover:bg-blue-700"
             >
               <Send className="h-5 w-5" />
             </Button>

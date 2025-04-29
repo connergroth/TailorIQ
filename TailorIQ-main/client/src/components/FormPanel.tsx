@@ -24,13 +24,11 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
 
   // Update a specific field in the resume data
   const updateField = (section: string, field: string, value: string) => {
-    setResumeData({
-      ...resumeData,
-      [section]: {
-        ...resumeData[section as keyof Resume],
-        [field]: value
-      }
-    });
+    const newResumeData = deepCopy(resumeData);
+    if (section in newResumeData) {
+      (newResumeData as any)[section][field] = value;
+      setResumeData(newResumeData);
+    }
   };
 
   // Add a new item to an array in the resume data
@@ -151,75 +149,83 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
             
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName" className="text-gray-800">First Name</Label>
                 <Input 
                   id="firstName" 
                   value={resumeData.personalInfo.firstName} 
                   onChange={(e) => updateField('personalInfo', 'firstName', e.target.value)}
+                  className="bg-white"
                 />
               </div>
               <div>
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName" className="text-gray-800">Last Name</Label>
                 <Input 
                   id="lastName" 
                   value={resumeData.personalInfo.lastName} 
                   onChange={(e) => updateField('personalInfo', 'lastName', e.target.value)}
+                  className="bg-white"
                 />
               </div>
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="title">Professional Title</Label>
+              <Label htmlFor="title" className="text-gray-800">Professional Title</Label>
               <Input 
                 id="title" 
                 value={resumeData.personalInfo.title} 
                 onChange={(e) => updateField('personalInfo', 'title', e.target.value)}
+                className="bg-white"
               />
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-800">Email</Label>
               <Input 
                 id="email" 
                 type="email" 
                 value={resumeData.personalInfo.email} 
                 onChange={(e) => updateField('personalInfo', 'email', e.target.value)}
+                className="bg-white"
               />
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone" className="text-gray-800">Phone</Label>
               <Input 
                 id="phone" 
                 value={resumeData.personalInfo.phone} 
                 onChange={(e) => updateField('personalInfo', 'phone', e.target.value)}
+                className="bg-white"
               />
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location" className="text-gray-800">Location</Label>
               <Input 
                 id="location" 
                 value={resumeData.personalInfo.location} 
                 onChange={(e) => updateField('personalInfo', 'location', e.target.value)}
+                className="bg-white"
               />
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="linkedin">LinkedIn URL (optional)</Label>
+              <Label htmlFor="linkedin" className="text-gray-800">LinkedIn</Label>
               <Input 
                 id="linkedin" 
                 value={resumeData.personalInfo.linkedin || ''} 
                 onChange={(e) => updateField('personalInfo', 'linkedin', e.target.value)}
+                className="bg-white"
               />
             </div>
             
             <div className="mb-4">
-              <Label htmlFor="portfolio">Portfolio/Website (optional)</Label>
+              <Label htmlFor="portfolio" className="text-gray-800">Personal Website</Label>
               <Input 
                 id="portfolio" 
                 value={resumeData.personalInfo.portfolio || ''} 
                 onChange={(e) => updateField('personalInfo', 'portfolio', e.target.value)}
+                className="bg-white"
               />
             </div>
           </div>
@@ -253,126 +259,78 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
           <div id="experience-section">
             <div className="pb-2 mb-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Work Experience</h2>
-              <p className="text-sm text-gray-500">List your work history, starting with the most recent position</p>
+              <p className="text-sm text-gray-500">Add your work history, starting with your most recent position</p>
             </div>
             
             {resumeData.experience.map((exp, index) => (
-              <Card key={index} className="mb-6">
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-md font-medium">Position {index + 1}</h3>
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveItemUp('experience', index)}
-                        disabled={index === 0}
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveItemDown('experience', index)}
-                        disabled={index === resumeData.experience.length - 1}
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => removeItem('experience', index)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              <div key={index} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-md font-medium text-gray-800">
+                    {exp.title} at {exp.company}
+                  </h3>
+                  <Button 
+                    onClick={() => removeItem('experience', index)} 
+                    variant="destructive" 
+                    size="sm"
+                    className="h-8 px-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor={`exp-${index}-company`} className="text-gray-800">Company</Label>
+                    <Input 
+                      id={`exp-${index}-company`} 
+                      value={exp.company} 
+                      onChange={(e) => updateArrayItem('experience', index, 'company', e.target.value)}
+                      className="bg-white"
+                    />
                   </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor={`company-${index}`}>Company</Label>
-                      <Input 
-                        id={`company-${index}`} 
-                        value={exp.company} 
-                        onChange={(e) => updateArrayItem('experience', index, 'company', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`title-${index}`}>Title</Label>
-                      <Input 
-                        id={`title-${index}`} 
-                        value={exp.title} 
-                        onChange={(e) => updateArrayItem('experience', index, 'title', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`location-${index}`}>Location</Label>
-                        <Input 
-                          id={`location-${index}`} 
-                          value={exp.location} 
-                          onChange={(e) => updateArrayItem('experience', index, 'location', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`period-${index}`}>Period</Label>
-                        <Input 
-                          id={`period-${index}`} 
-                          placeholder="Jan 2020 - Present" 
-                          value={exp.period} 
-                          onChange={(e) => updateArrayItem('experience', index, 'period', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`description-${index}`}>Description</Label>
-                      <Textarea 
-                        id={`description-${index}`} 
-                        value={exp.description} 
-                        onChange={(e) => updateArrayItem('experience', index, 'description', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <Label>Key Achievements</Label>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => addAchievement(index)}
-                          className="h-8"
-                        >
-                          <PlusCircle className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </div>
-                      
-                      {exp.achievements.map((achievement, achievementIndex) => (
-                        <div key={achievementIndex} className="flex items-center gap-2 mb-2">
-                          <Input 
-                            value={achievement} 
-                            onChange={(e) => updateAchievement(index, achievementIndex, e.target.value)}
-                            placeholder="Describe a key achievement"
-                          />
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeAchievement(index, achievementIndex)}
-                            className="text-destructive"
-                            disabled={exp.achievements.length <= 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                  <div>
+                    <Label htmlFor={`exp-${index}-title`} className="text-gray-800">Job Title</Label>
+                    <Input 
+                      id={`exp-${index}-title`} 
+                      value={exp.title || ''} 
+                      onChange={(e) => updateArrayItem('experience', index, 'title', e.target.value)}
+                      className="bg-white"
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                
+                <div className="mb-4">
+                  <Label htmlFor={`exp-${index}-period`} className="text-gray-800">Period</Label>
+                  <Input 
+                    id={`exp-${index}-period`} 
+                    value={exp.period || ''} 
+                    onChange={(e) => updateArrayItem('experience', index, 'period', e.target.value)}
+                    placeholder="e.g., Jan 2020 - Present"
+                    className="bg-white"
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <Label htmlFor={`exp-${index}-location`} className="text-gray-800">Location</Label>
+                  <Input 
+                    id={`exp-${index}-location`} 
+                    value={exp.location} 
+                    onChange={(e) => updateArrayItem('experience', index, 'location', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <Label htmlFor={`exp-${index}-description`} className="text-gray-800">Description</Label>
+                  <Textarea 
+                    id={`exp-${index}-description`} 
+                    value={exp.description} 
+                    onChange={(e) => updateArrayItem('experience', index, 'description', e.target.value)}
+                    rows={3}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
             ))}
             
             <Button 
@@ -390,103 +348,76 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
           <div id="education-section">
             <div className="pb-2 mb-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Education</h2>
-              <p className="text-sm text-gray-500">List your educational background, starting with the most recent</p>
+              <p className="text-sm text-gray-500">List your educational background</p>
             </div>
             
             {resumeData.education.map((edu, index) => (
-              <Card key={index} className="mb-6">
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-md font-medium">Education {index + 1}</h3>
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveItemUp('education', index)}
-                        disabled={index === 0}
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => moveItemDown('education', index)}
-                        disabled={index === resumeData.education.length - 1}
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => removeItem('education', index)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              <div key={index} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-md font-medium text-gray-800">{edu.degree || 'Education Entry'}</h3>
+                  <Button 
+                    onClick={() => removeItem('education', index)} 
+                    variant="destructive" 
+                    size="sm"
+                    className="h-8 px-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor={`edu-${index}-institution`} className="text-gray-800">Institution</Label>
+                    <Input 
+                      id={`edu-${index}-institution`} 
+                      value={edu.institution} 
+                      onChange={(e) => updateArrayItem('education', index, 'institution', e.target.value)}
+                      className="bg-white"
+                    />
                   </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor={`institution-${index}`}>Institution</Label>
-                      <Input 
-                        id={`institution-${index}`} 
-                        value={edu.institution} 
-                        onChange={(e) => updateArrayItem('education', index, 'institution', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`degree-${index}`}>Degree</Label>
-                      <Input 
-                        id={`degree-${index}`} 
-                        value={edu.degree} 
-                        onChange={(e) => updateArrayItem('education', index, 'degree', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`field-${index}`}>Field of Study</Label>
-                      <Input 
-                        id={`field-${index}`} 
-                        value={edu.field} 
-                        onChange={(e) => updateArrayItem('education', index, 'field', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`period-${index}`}>Period</Label>
-                        <Input 
-                          id={`period-${index}`} 
-                          placeholder="2015 - 2019" 
-                          value={edu.period} 
-                          onChange={(e) => updateArrayItem('education', index, 'period', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`gpa-${index}`}>GPA (optional)</Label>
-                        <Input 
-                          id={`gpa-${index}`} 
-                          placeholder="3.8/4.0" 
-                          value={edu.gpa} 
-                          onChange={(e) => updateArrayItem('education', index, 'gpa', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`additionalInfo-${index}`}>Additional Information (optional)</Label>
-                      <Input 
-                        id={`additionalInfo-${index}`} 
-                        placeholder="Honors, relevant coursework, etc." 
-                        value={edu.additionalInfo} 
-                        onChange={(e) => updateArrayItem('education', index, 'additionalInfo', e.target.value)}
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor={`edu-${index}-degree`} className="text-gray-800">Degree</Label>
+                    <Input 
+                      id={`edu-${index}-degree`} 
+                      value={edu.degree} 
+                      onChange={(e) => updateArrayItem('education', index, 'degree', e.target.value)}
+                      className="bg-white"
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor={`edu-${index}-field`} className="text-gray-800">Field of Study</Label>
+                    <Input 
+                      id={`edu-${index}-field`} 
+                      value={edu.field || ''} 
+                      onChange={(e) => updateArrayItem('education', index, 'field', e.target.value)}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`edu-${index}-period`} className="text-gray-800">Period</Label>
+                    <Input 
+                      id={`edu-${index}-period`} 
+                      value={edu.period || ''} 
+                      onChange={(e) => updateArrayItem('education', index, 'period', e.target.value)}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <Label htmlFor={`edu-${index}-additionalInfo`} className="text-gray-800">Additional Info</Label>
+                  <Textarea 
+                    id={`edu-${index}-additionalInfo`} 
+                    value={edu.additionalInfo || ''} 
+                    onChange={(e) => updateArrayItem('education', index, 'additionalInfo', e.target.value)}
+                    rows={3}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
             ))}
             
             <Button 
@@ -606,35 +537,29 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
                         onChange={(e) => updateArrayItem('certifications', index, 'name', e.target.value)}
                       />
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`certIssuer-${index}`}>Issuing Organization</Label>
-                        <Input 
-                          id={`certIssuer-${index}`} 
-                          value={cert.issuer} 
-                          onChange={(e) => updateArrayItem('certifications', index, 'issuer', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`certDate-${index}`}>Date</Label>
-                        <Input 
-                          id={`certDate-${index}`} 
-                          placeholder="May 2022" 
-                          value={cert.date} 
-                          onChange={(e) => updateArrayItem('certifications', index, 'date', e.target.value)}
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor={`certIssuer-${index}`}>Issuing Organization</Label>
+                      <Input 
+                        id={`certIssuer-${index}`} 
+                        value={cert.issuer} 
+                        onChange={(e) => updateArrayItem('certifications', index, 'issuer', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`certDate-${index}`}>Date</Label>
+                      <Input 
+                        id={`certDate-${index}`} 
+                        value={cert.date} 
+                        onChange={(e) => updateArrayItem('certifications', index, 'date', e.target.value)}
+                        placeholder="e.g., June 2023"
+                      />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
             
-            <Button 
-              onClick={() => addNewItem('certifications')}
-              className="w-full"
-            >
+            <Button onClick={() => addNewItem('certifications')} className="w-full">
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Certification
             </Button>
@@ -706,91 +631,13 @@ export default function FormPanel({ activeSection, resumeData, setResumeData }: 
         );
         
       default:
-        return <div>Select a section to edit</div>;
+        return null;
     }
   };
 
   return (
-    <div className="p-6">
-      <Tabs defaultValue="resume" className="w-full">
-        <TabsList className="w-full mb-6 bg-gray-100">
-          <TabsTrigger value="resume" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">
-            <FileText className="h-4 w-4 mr-2" />
-            Resume Sections
-          </TabsTrigger>
-          <TabsTrigger value="job" className="flex-1 text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Job Information
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="resume">
-          {renderSection()}
-        </TabsContent>
-
-        <TabsContent value="job">
-          <div id="target-job-section">
-            <div className="pb-2 mb-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Target Job</h2>
-              <p className="text-sm text-gray-500">Enter the job you're targeting to get tailored suggestions</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="targetJobTitle">Job Title</Label>
-                <Input 
-                  id="targetJobTitle" 
-                  value={resumeData.targetJob?.title || ''} 
-                  onChange={(e) => setResumeData({
-                    ...resumeData,
-                    targetJob: {
-                      ...resumeData.targetJob,
-                      title: e.target.value
-                    }
-                  })}
-                  placeholder="e.g., Senior Software Engineer"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="targetJobCompany">Company (Optional)</Label>
-                <Input 
-                  id="targetJobCompany" 
-                  value={resumeData.targetJob?.company || ''} 
-                  onChange={(e) => setResumeData({
-                    ...resumeData,
-                    targetJob: {
-                      ...resumeData.targetJob,
-                      company: e.target.value
-                    }
-                  })}
-                  placeholder="e.g., Tech Company"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="targetJobDescription">Job Description</Label>
-                <Textarea 
-                  id="targetJobDescription" 
-                  value={resumeData.targetJob?.description || ''} 
-                  onChange={(e) => setResumeData({
-                    ...resumeData,
-                    targetJob: {
-                      ...resumeData.targetJob,
-                      description: e.target.value
-                    }
-                  })}
-                  placeholder="Paste the job description here..."
-                  className="min-h-[200px]"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  The AI will use this information to provide tailored suggestions for your resume.
-                </p>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+    <div className="h-full overflow-y-auto p-4">
+      {renderSection()}
     </div>
   );
 }

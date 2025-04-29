@@ -14,7 +14,7 @@ export const resumes = pgTable("resumes", {
 });
 
 // Resume template types
-export type ResumeTemplate = "modern" | "classic" | "minimal" | "creative";
+export type ResumeTemplate = "modern" | "classic" | "minimal" | "creative" | "jakegut";
 
 // Resume data interface
 export interface Resume {

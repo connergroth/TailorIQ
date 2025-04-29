@@ -5,98 +5,126 @@ import { generateJakeGutTemplate } from "./jakeGutTemplate";
 // Function to generate a PDF from resume data and selected template
 export async function generatePDF(resumeData: Resume, template: ResumeTemplate, settings: any = {}): Promise<Buffer> {
   let browser = null;
-  try {
-    // Generate the HTML for the resume
-    const htmlContent = generateResumeHTML(resumeData, template, settings);
+  let retries = 0;
+  const maxRetries = 3;
+  
+  while (retries <= maxRetries) {
+    try {
+      // Generate the HTML for the resume
+      const htmlContent = generateResumeHTML(resumeData, template, settings);
 
-    // Launch Puppeteer with more flexible configuration for Render deployment
-    browser = await puppeteer.launch({
-      headless: true,  // Use headless mode
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--disable-extensions',
-        '--single-process'
-      ]
-    });
+      // More robust Puppeteer configuration with explicit Chrome path
+      browser = await puppeteer.launch({
+        headless: true, 
+        ignoreDefaultArgs: false,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-web-security',
+          '--font-render-hinting=none',
+          '--disable-features=site-per-process',
+          '--enable-font-antialiasing',
+          '--window-size=1100,1400'
+        ],
+        pipe: true, // Use pipes instead of WebSockets
+        timeout: 60000
+      });
 
-    const page = await browser.newPage();
-    
-    // Set viewport size to ensure content fits properly
-    await page.setViewport({ width: 1100, height: 1400 });
+      // Create new page and wait until network is idle
+      const page = await browser.newPage();
+      
+      // Set viewport size to ensure content fits properly
+      await page.setViewport({ width: 1100, height: 1400 });
 
-    // Set content directly without navigating to about:blank first
-    await page.setContent(htmlContent, { 
-      waitUntil: ['networkidle0', 'domcontentloaded'],
-      timeout: 60000  // Increase timeout to 60 seconds
-    });
+      // Set content with proper waitUntil options to ensure page is fully loaded
+      await page.setContent(htmlContent, { 
+        waitUntil: 'networkidle0',
+        timeout: 60000  // Extend timeout to 60 seconds
+      });
 
-    // Wait for content to be fully rendered with a longer timeout
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait additional time to ensure all fonts are loaded and rendered
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Configure PDF options based on settings
-    const pdfOptions: any = {
-      printBackground: true,
-      margin: {
-        top: '0.5in',
-        right: '0.5in',
-        bottom: '0.5in',
-        left: '0.5in'
-      },
-      preferCSSPageSize: true,
-      timeout: 30000  // Add timeout for PDF generation
-    };
-    
-    // Set paper size from settings
-    if (settings.paperSize === 'letter' || !settings.paperSize) {
-      pdfOptions.format = 'Letter';
-    } else if (settings.paperSize === 'a4') {
-      pdfOptions.format = 'A4';
-    }
-    
-    // Generate the PDF with retry logic
-    let retries = 3;
-    let pdfData;
-    
-    while (retries > 0) {
-      try {
-        // Wait for any remaining network requests to complete
-        await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
-        
-        // Generate PDF
-        pdfData = await page.pdf(pdfOptions);
-        break;
-      } catch (error) {
-        retries--;
-        if (retries === 0) throw error;
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer before retry
+      // Ensure all content is properly rendered
+      await page.evaluate(() => {
+        // Scroll to bottom and back to ensure all content is rendered
+        window.scrollTo(0, document.body.scrollHeight);
+        window.scrollTo(0, 0);
+        return Promise.resolve();
+      });
+
+      // Configure PDF options based on settings
+      const pdfOptions: any = {
+        printBackground: true,
+        margin: {
+          top: '0.4in',
+          right: '0.4in',
+          bottom: '0.4in',
+          left: '0.4in'
+        },
+        preferCSSPageSize: true,
+        timeout: 60000,
+        scale: 1.0,  // Default scale
+        displayHeaderFooter: false,
+        landscape: false
+      };
+      
+      // Set paper size from settings
+      if (settings.paperSize === 'letter' || !settings.paperSize) {
+        pdfOptions.format = 'Letter';
+        pdfOptions.width = '8.5in';
+        pdfOptions.height = '11in';
+      } else if (settings.paperSize === 'a4') {
+        pdfOptions.format = 'A4';
+        pdfOptions.width = '210mm';
+        pdfOptions.height = '297mm';
       }
-    }
-    
-    if (!pdfData) {
-      throw new Error("Failed to generate PDF after multiple attempts");
-    }
-    
-    // Convert Uint8Array to Buffer
-    const pdfBuffer = Buffer.from(pdfData);
-    return pdfBuffer;
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    throw new Error(`Failed to generate PDF: ${errorMessage}`);
-  } finally {
-    // Make sure browser closes even if there's an error
-    if (browser) {
-      try {
+      
+      // Generate the PDF - critical to await this before closing the browser
+      console.log("Generating PDF with options:", JSON.stringify(pdfOptions));
+      console.log("Using template:", template);
+      const pdfData = await page.pdf(pdfOptions);
+      console.log("PDF generation successful");
+      
+      // Important: Make sure browser is closed properly
+      if (browser) {
         await browser.close();
-      } catch (closeError) {
-        console.error("Error closing browser:", closeError);
+        browser = null;
       }
+      
+      // Convert Uint8Array to Buffer
+      return Buffer.from(pdfData);
+    } catch (error) {
+      retries++;
+      console.error(`Error generating PDF (attempt ${retries}/${maxRetries}):`, error);
+      
+      // Close the browser if it's still open
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.error("Error closing browser:", closeError);
+        }
+        browser = null;
+      }
+      
+      // If we've reached the max retries, throw the error
+      if (retries > maxRetries) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to generate PDF: ${errorMessage}`);
+      }
+      
+      // Wait a bit longer before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
+  
+  // This should never be reached due to the while loop and throw in the catch block
+  throw new Error("Failed to generate PDF after multiple attempts");
 }
 
 function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settings: any = {}): string {
@@ -126,32 +154,78 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
   
   // Common styles for all templates with settings applied
   const commonStyles = `
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      text-align: left !important;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      text-align: left !important;
+    }
     body {
       font-family: ${getFontFamily(fontFamily)};
       font-size: ${fontSize}pt;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
       color: #333;
       line-height: ${lineSpacing};
+      text-align: left !important;
+    }
+    p, div, span, h1, h2, h3, h4, h5, h6, li {
+      text-align: left !important;
+    }
+    .page-container {
+      width: 100%;
+      height: 100%;
+      max-width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
+      max-height: ${paperSize === 'letter' ? '11in' : '297mm'};
+      margin: 0 auto;
+      text-align: left;
     }
     .resume-page {
-      width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
-      height: ${paperSize === 'letter' ? '11in' : '297mm'};
+      width: 100%;
+      height: 100%;
       padding: 0.6in;
       box-sizing: border-box;
       background-color: white;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      text-align: left;
     }
     @page {
-      size: ${paperSize} portrait;
+      size: ${paperSize === 'letter' ? 'letter' : 'a4'} portrait;
       margin: 0;
     }
     
     /* Font size scaling for overflow prevention */
     @media print {
       html, body {
-        width: ${paperSize === 'letter' ? '8.5in' : '210mm'};
-        height: ${paperSize === 'letter' ? '11in' : '297mm'};
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      
+      .page-container {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+      }
+      
+      .resume-page {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0.6in;
+        box-shadow: none;
         overflow: hidden;
       }
       
@@ -162,12 +236,10 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
     }
   `;
 
-  // Get the template-specific HTML - Default to Jake Gut template for all options
-  // Use jake gut template for better professional formatting
-  const templateHTML = generateJakeGutTemplate(resumeData, settings);
-  
-  /* Original template selection (disabled for professional formatting)
+  // Select the template based on the template parameter
   let templateHTML = '';
+  console.log("Generating resume with template:", template);
+  
   switch (template) {
     case 'modern':
       templateHTML = generateModernTemplate(resumeData);
@@ -181,10 +253,14 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
     case 'creative':
       templateHTML = generateCreativeTemplate(resumeData);
       break;
+    case 'jakegut':
+      templateHTML = generateJakeGutTemplate(resumeData, settings);
+      break;
     default:
+      // Default to modern template if no valid template is selected
+      console.log("No valid template selected, defaulting to modern");
       templateHTML = generateModernTemplate(resumeData);
   }
-  */
 
   // Complete HTML document
   return `
@@ -196,11 +272,17 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
       <title>Resume - ${resumeData.personalInfo.firstName} ${resumeData.personalInfo.lastName}</title>
       <style>
         ${commonStyles}
+        /* Force left alignment throughout the document */
+        html, body, div, p, h1, h2, h3, h4, h5, h6, span, ul, li {
+          text-align: left !important;
+        }
       </style>
     </head>
     <body>
-      <div class="resume-page">
-        ${templateHTML}
+      <div class="page-container" style="text-align: left !important;">
+        <div class="resume-page" style="text-align: left !important;">
+          ${templateHTML}
+        </div>
       </div>
     </body>
     </html>
@@ -210,10 +292,17 @@ function generateResumeHTML(resumeData: Resume, template: ResumeTemplate, settin
 function generateModernTemplate(resumeData: Resume): string {
   return `
     <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        color: #333;
+        line-height: 1.6;
+        text-align: left !important;
+      }
       .header {
         display: flex;
         justify-content: space-between;
         margin-bottom: 1.5rem;
+        text-align: left !important;
       }
       .header-left h1 {
         font-size: 1.5rem;
@@ -236,6 +325,7 @@ function generateModernTemplate(resumeData: Resume): string {
       }
       .section {
         margin-bottom: 1.5rem;
+        text-align: left !important;
       }
       .section-heading {
         font-size: 1rem;
@@ -273,6 +363,7 @@ function generateModernTemplate(resumeData: Resume): string {
       }
       .achievements li {
         margin-bottom: 0.25rem;
+        text-align: left !important;
       }
       .two-columns {
         display: flex;
@@ -401,8 +492,14 @@ function generateModernTemplate(resumeData: Resume): string {
 function generateClassicTemplate(resumeData: Resume): string {
   return `
     <style>
+      body {
+        font-family: 'Merriweather', serif;
+        color: #333;
+        line-height: 1.6;
+        text-align: left !important;
+      }
       .classic-header {
-        text-align: center;
+        text-align: left !important;
         margin-bottom: 1.5rem;
         border-bottom: 2px solid #ddd;
         padding-bottom: 1rem;
@@ -421,7 +518,7 @@ function generateClassicTemplate(resumeData: Resume): string {
       }
       .contact-info {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 1rem;
         flex-wrap: wrap;
         font-size: 0.875rem;
@@ -432,6 +529,7 @@ function generateClassicTemplate(resumeData: Resume): string {
       }
       .section {
         margin-bottom: 1.5rem;
+        text-align: left !important;
       }
       .section-heading {
         font-size: 1rem;
@@ -467,6 +565,7 @@ function generateClassicTemplate(resumeData: Resume): string {
       }
       .achievements li {
         margin-bottom: 0.25rem;
+        text-align: left !important;
       }
       .skills-list {
         font-size: 0.875rem;
@@ -575,8 +674,15 @@ function generateClassicTemplate(resumeData: Resume): string {
 function generateMinimalTemplate(resumeData: Resume): string {
   return `
     <style>
+      body {
+        font-family: 'Roboto', sans-serif;
+        color: #333;
+        line-height: 1.6;
+        text-align: left !important;
+      }
       .minimal-header {
         margin-bottom: 1rem;
+        text-align: left !important;
       }
       .minimal-header h1 {
         font-size: 1.5rem;
@@ -603,6 +709,7 @@ function generateMinimalTemplate(resumeData: Resume): string {
       }
       .section {
         margin-bottom: 1.25rem;
+        text-align: left !important;
       }
       .section-heading {
         font-size: 1rem;
@@ -632,6 +739,7 @@ function generateMinimalTemplate(resumeData: Resume): string {
         font-size: 0.75rem;
         color: #666;
         margin-top: 0.25rem;
+        text-align: left !important;
       }
       .achievements {
         list-style-type: disc;
@@ -639,6 +747,7 @@ function generateMinimalTemplate(resumeData: Resume): string {
         margin-top: 0.5rem;
         font-size: 0.75rem;
         color: #666;
+        text-align: left !important;
       }
       .two-columns {
         display: flex;
@@ -759,6 +868,12 @@ function generateMinimalTemplate(resumeData: Resume): string {
 function generateCreativeTemplate(resumeData: Resume): string {
   return `
     <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+        color: #333;
+        line-height: 1.6;
+        text-align: left !important;
+      }
       .creative-container {
         display: flex;
         height: 100%;
@@ -772,6 +887,7 @@ function generateCreativeTemplate(resumeData: Resume): string {
       .content {
         width: 66.667%;
         padding: 1.5rem;
+        text-align: left !important;
       }
       .sidebar-header {
         margin-top: 1.5rem;
@@ -807,7 +923,7 @@ function generateCreativeTemplate(resumeData: Resume): string {
       .contact-icon {
         width: 1.25rem;
         margin-right: 0.5rem;
-        text-align: center;
+        text-align: left;
       }
       .skill-item {
         display: flex;
@@ -878,6 +994,7 @@ function generateCreativeTemplate(resumeData: Resume): string {
         font-size: 0.75rem;
         color: #666;
         margin-top: 0.25rem;
+        text-align: left !important;
       }
       .timeline-list {
         list-style-type: disc;
@@ -885,9 +1002,11 @@ function generateCreativeTemplate(resumeData: Resume): string {
         margin-top: 0.5rem;
         font-size: 0.75rem;
         color: #666;
+        text-align: left !important;
       }
       .timeline-list li {
         margin-bottom: 0.25rem;
+        text-align: left !important;
       }
     </style>
 

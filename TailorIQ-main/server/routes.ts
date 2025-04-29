@@ -8,7 +8,42 @@ import { generatePDF } from "./pdf";
 import { Resume } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+
+  // PDF generation endpoint with robust error handling
+  app.post("/api/resume/generate-pdf", async (req, res) => {
+    try {
+      const { resumeData, template, settings } = req.body;
+      
+      if (!resumeData || !template) {
+        return res.status(400).json({ message: "Resume data and template are required" });
+      }
+      
+      console.log("Generating PDF with template:", template);
+      console.log("Using settings:", JSON.stringify(settings));
+      
+      // The retry logic is now built into generatePDF function
+      const pdfBuffer = await generatePDF(resumeData, template, settings);
+      
+      // Set the appropriate headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+      
+      // Send the PDF buffer as the response
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ 
+        message: "Error generating PDF", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // Other routes remain unchanged
   app.post("/api/resume/llm-review", async (req, res) => {
     try {
       const { resumeData } = req.body;
@@ -40,33 +75,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error improving text:", error);
       res.status(500).json({ message: "Error improving text" });
-    }
-  });
-
-  app.post("/api/resume/generate-pdf", async (req, res) => {
-    try {
-      const { resumeData, template, settings } = req.body;
-      
-      if (!resumeData || !template) {
-        return res.status(400).json({ message: "Resume data and template are required" });
-      }
-      
-      console.log("Generating PDF with settings:", JSON.stringify(settings));
-      
-      const pdfBuffer = await generatePDF(resumeData, template, settings);
-      
-      // Set the appropriate headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
-      
-      // Send the PDF buffer as the response
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      res.status(500).json({ 
-        message: "Error generating PDF", 
-        error: error instanceof Error ? error.message : String(error) 
-      });
     }
   });
 

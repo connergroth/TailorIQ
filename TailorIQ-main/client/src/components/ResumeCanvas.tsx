@@ -82,6 +82,8 @@ export default function ResumeCanvas({
     switch (template) {
       case "modern":
         return renderModernTemplate();
+      case "jakegut":
+        return renderJakeGutTemplate();
       case "classic":
         return renderClassicTemplate();
       case "minimal":
@@ -217,6 +219,134 @@ export default function ResumeCanvas({
                 {resumeData.certifications.map((cert, index) => (
                   <li key={index} className={index < resumeData.certifications.length - 1 ? "mb-1" : ""}>
                     {cert.name} {cert.issuer && `(${cert.issuer})`} {cert.date && `- ${cert.date}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Jake Gut template - Professional, executive-focused design
+  const renderJakeGutTemplate = () => {
+    return (
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-8 border-b-2 border-gray-800 pb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {resumeData.personalInfo.firstName} {resumeData.personalInfo.lastName}
+            </h1>
+            <h2 className="text-xl text-gray-700 font-medium mt-1">
+              {resumeData.personalInfo.title}
+            </h2>
+          </div>
+          <div className="text-right text-sm text-gray-600">
+            {resumeData.personalInfo.email && <div className="mb-1 font-medium">{resumeData.personalInfo.email}</div>}
+            {resumeData.personalInfo.phone && <div className="mb-1">{resumeData.personalInfo.phone}</div>}
+            {resumeData.personalInfo.location && <div className="mb-1">{resumeData.personalInfo.location}</div>}
+            {resumeData.personalInfo.linkedin && <div className="mb-1">{resumeData.personalInfo.linkedin}</div>}
+            {resumeData.personalInfo.portfolio && <div>{resumeData.personalInfo.portfolio}</div>}
+          </div>
+        </div>
+
+        {/* Summary - More prominent in Jake's template */}
+        {resumeData.summary && (
+          <div className="mb-7">
+            <h3 className="text-md font-bold text-gray-900 uppercase tracking-wider mb-3">
+              Executive Summary
+            </h3>
+            <p className="text-sm text-gray-700 leading-relaxed">{resumeData.summary}</p>
+          </div>
+        )}
+
+        {/* Experience - Emphasized in Jake's template */}
+        {resumeData.experience.length > 0 && (
+          <div className="mb-7">
+            <h3 className="text-md font-bold text-gray-900 uppercase tracking-wider mb-3">
+              Professional Experience
+            </h3>
+            
+            {resumeData.experience.map((exp, index) => (
+              <div key={index} className="mb-5">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">{exp.title}</h4>
+                    <h5 className="text-sm font-medium text-gray-700">{exp.company}, {exp.location}</h5>
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">{exp.period}</div>
+                </div>
+                {exp.description && <p className="mt-2 text-sm text-gray-700">{exp.description}</p>}
+                {exp.achievements && exp.achievements.length > 0 && (
+                  <ul className="mt-2 text-sm text-gray-700 pl-5 list-disc">
+                    {exp.achievements.map((achievement, i) => (
+                      achievement.trim() && (
+                        <li key={i} className="mb-1">
+                          {achievement}
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Education */}
+        {resumeData.education.length > 0 && (
+          <div className="mb-7">
+            <h3 className="text-md font-bold text-gray-900 uppercase tracking-wider mb-3">
+              Education
+            </h3>
+            
+            {resumeData.education.map((edu, index) => (
+              <div key={index} className="mb-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">{edu.degree} {edu.field && `in ${edu.field}`}</h4>
+                    <h5 className="text-sm font-medium text-gray-700">{edu.institution}</h5>
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">{edu.period}</div>
+                </div>
+                {(edu.gpa || edu.additionalInfo) && (
+                  <div className="text-xs text-gray-700 mt-1">
+                    {edu.gpa && `GPA: ${edu.gpa}`} 
+                    {edu.gpa && edu.additionalInfo && ", "}
+                    {edu.additionalInfo}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Skills & Certifications in a cleaner, more structured layout */}
+        <div className="grid grid-cols-2 gap-8">
+          {/* Skills */}
+          {resumeData.skills.length > 0 && (
+            <div>
+              <h3 className="text-md font-bold text-gray-900 uppercase tracking-wider mb-3">
+                Technical Skills
+              </h3>
+              <div className="text-sm text-gray-800">
+                {resumeData.skills.filter(s => s.trim()).join(" • ")}
+              </div>
+            </div>
+          )}
+
+          {/* Certifications */}
+          {resumeData.certifications.length > 0 && (
+            <div>
+              <h3 className="text-md font-bold text-gray-900 uppercase tracking-wider mb-3">
+                Certifications
+              </h3>
+              <ul className="text-sm text-gray-700 pl-5 list-disc">
+                {resumeData.certifications.map((cert, index) => (
+                  <li key={index} className="mb-1">
+                    <span className="font-medium">{cert.name}</span> {cert.issuer && `(${cert.issuer})`} {cert.date && `- ${cert.date}`}
                   </li>
                 ))}
               </ul>

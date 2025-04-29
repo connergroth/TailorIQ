@@ -14,8 +14,13 @@ export default function ResumeTemplates({ activeTemplate, onTemplateChange }: Re
   const templates: Array<{ id: ResumeTemplate; name: string; description: string }> = [
     {
       id: "modern",
-      name: "Jake's Modern",
+      name: "Modern",
       description: "Professional and clean design with optimal spacing and typography. Great for all industries."
+    },
+    {
+      id: "jakegut",
+      name: "Jake's Professional",
+      description: "Premium layout with optimized formatting. Best for executive and technical roles."
     },
     {
       id: "classic",

@@ -285,6 +285,7 @@ export async function processAIChatMessage(
       messages: messages as any,
       response_format: { type: "json_object" },
       temperature: 0.7,
+      max_tokens: 2048,
     });
 
     const content = response.choices[0].message.content;
