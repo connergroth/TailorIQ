@@ -8,10 +8,11 @@
 
 ---
 
-## 🌐 Live App (Coming Soon)
+## 🌐 Live App 
 
-Stay tuned for our live deployment!
-
+> Tailor your resume here:
+>
+> [📱 Live App](https://tailoriq.onrender.com/)
 ---
 
 ## ✨ Features
