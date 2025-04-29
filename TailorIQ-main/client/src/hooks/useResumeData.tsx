@@ -19,8 +19,7 @@ export const defaultResumeData: Resume = {
       title: "Software Engineer",
       company: "Tech Corp",
       location: "San Francisco, CA",
-      startDate: "2020-01",
-      endDate: "Present",
+      period: "Jan 2020 - Present",
       description: "Lead developer for cloud-based applications",
       achievements: [
         "Architected and implemented microservices infrastructure",
@@ -32,8 +31,7 @@ export const defaultResumeData: Resume = {
       title: "Software Engineer",
       company: "StartUp Inc",
       location: "San Francisco, CA",
-      startDate: "2018-01",
-      endDate: "2019-12",
+      period: "Jan 2018 - Dec 2019",
       description: "Full-stack development for web applications",
       achievements: [
         "Developed RESTful APIs serving 1M+ requests daily",
@@ -47,8 +45,7 @@ export const defaultResumeData: Resume = {
       institution: "University of California, Berkeley",
       degree: "Bachelor of Science",
       field: "Computer Science",
-      startDate: "2014-09",
-      endDate: "2018-05",
+      period: "Sep 2014 - May 2018",
       gpa: "3.8",
       additionalInfo: "Dean's List, Computer Science Club President"
     }

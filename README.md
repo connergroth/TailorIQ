@@ -8,31 +8,37 @@
 
 ---
 
-## 🌐 Live App 
+## 🌐 Live App
 
 > Tailor your resume here:
 >
 > [📱 Live App](https://tailoriq.onrender.com/)
+
 ---
 
 ## ✨ Features
 
 ### 🧬 AI-Enhanced Resume Generation
+
 - Automatically generate professional, ATS-optimized resumes.
 - Tailor resumes to specific job descriptions.
 
 ### 📋 Easy Multi-Step Questionnaire
+
 - Input work experience, education, skills, and projects.
 - Add/remove entries dynamically.
 
 ### 🎨 Customization & Templates
+
 - Choose between modern, classic, minimal, and creative templates.
 - Adjust font, spacing, and layout settings.
 
 ### 🛡️ Secure User Management
+
 - Google Authentication for safe, cross-device access.
 
 ### 📄 PDF Export
+
 - Download polished resumes directly as PDFs.
 
 ---
@@ -49,6 +55,7 @@
 </p>
 
 ### Frontend
+
 - React + TypeScript
 - Tailwind CSS
 - Wouter (Routing)
@@ -56,6 +63,7 @@
 - React Hook Form
 
 ### Backend
+
 - Express.js
 - Puppeteer (PDF generation)
 - OpenAI Integration (Resume improvements)
@@ -65,21 +73,41 @@
 ## 📦 Installation
 
 ### Prerequisites
+
 - Node.js v16+
 - Firebase account
 - OpenAI API key
+- Chrome browser for Puppeteer (installed automatically)
 
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/tailoriq.git
    cd tailoriq
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
+   ```
+
+3. **Chrome for PDF Generation**
+
+   Puppeteer will automatically download a compatible Chrome browser during installation. If you encounter issues with PDF generation, you can manually install Chrome:
+
+   ```bash
+   npx puppeteer browsers install chrome
+   ```
+
+   For deploying to environments like Render, ensure the following environment variables are set:
+
+   ```
+   PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer
+   PUPPETEER_DOWNLOAD_HOST=https://storage.googleapis.com
+   PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
    ```
 
 ---
@@ -106,11 +134,13 @@ OPENAI_API_KEY=your_openai_api_key
 ## 🔑 API Keys
 
 ### Firebase
+
 - Set up a Firebase project.
 - Enable Authentication (Google Sign-In).
 - Fill in the environment variables.
 
 ### OpenAI
+
 - Create an API key at [OpenAI](https://platform.openai.com/).
 - Add it to `.env`.
 
@@ -119,12 +149,15 @@ OPENAI_API_KEY=your_openai_api_key
 ## 🚀 Running the Application
 
 ### Development
+
 ```bash
 npm run dev
 ```
+
 App will be available at [http://localhost:5000](http://localhost:5000).
 
 ### Production
+
 ```bash
 npm run build
 npm run start
@@ -138,7 +171,7 @@ npm run start
 TailorIQ/
 ├── client/                     # Frontend React application
 │   ├── src/
-│   │   ├── components/         # UI components 
+│   │   ├── components/         # UI components
 │   │   │   ├── ui/             # shadcn/ui component library
 │   │   │   └── ...             # Application-specific components
 │   │   ├── contexts/           # React context providers
