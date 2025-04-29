@@ -13,9 +13,9 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
       // Generate the HTML for the resume
       const htmlContent = generateResumeHTML(resumeData, template, settings);
 
-      // More robust Puppeteer configuration with explicit Chrome path
+      // Launch with a modified configuration that attempts to download Chrome if not found
       browser = await puppeteer.launch({
-        headless: true, 
+        headless: true,
         ignoreDefaultArgs: false,
         args: [
           '--no-sandbox',

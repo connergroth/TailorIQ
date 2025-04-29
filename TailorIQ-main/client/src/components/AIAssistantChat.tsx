@@ -121,13 +121,23 @@ export default function AIAssistantChat({ resumeData, setResumeData, isOpen, onC
   } => {
     const textLower = text.toLowerCase();
     
-    // Check for add requests
-    if (textLower.includes('add') || textLower.includes('include') || textLower.includes('create') || textLower.includes('insert') || textLower.includes('new')) {
-      if (textLower.includes('skill') || textLower.includes('ability') || textLower.includes('competency') || textLower.includes('proficiency')) {
+    // Check for add requests - make more specific to avoid false positives
+    if ((textLower.includes('add ') || textLower.includes('include ') || textLower.includes('create ') || 
+         textLower.includes('insert ') || textLower.startsWith('new ')) && 
+        textLower.length < 100) { // Shorter text is more likely a direct command
+      
+      if ((textLower.includes('skill') || textLower.includes('ability') || 
+           textLower.includes('competency') || textLower.includes('proficiency')) && 
+          !textLower.includes('summary') && !textLower.includes('improve')) {
         return { type: 'add', section: 'skills', itemType: 'skill', text };
-      } else if (textLower.includes('education') || textLower.includes('degree') || textLower.includes('university') || textLower.includes('college') || textLower.includes('school')) {
+      } else if ((textLower.includes('education') || textLower.includes('degree') || 
+                 textLower.includes('university') || textLower.includes('college') || 
+                 textLower.includes('school')) && 
+                !textLower.includes('summary') && !textLower.includes('improve')) {
         return { type: 'add', section: 'education', itemType: 'education', text };
-      } else if (textLower.includes('certification') || textLower.includes('certificate') || textLower.includes('license') || textLower.includes('credential')) {
+      } else if ((textLower.includes('certification') || textLower.includes('certificate') || 
+                 textLower.includes('license') || textLower.includes('credential')) && 
+                !textLower.includes('summary') && !textLower.includes('improve')) {
         return { type: 'add', section: 'certifications', itemType: 'certification', text };
       }
     }
