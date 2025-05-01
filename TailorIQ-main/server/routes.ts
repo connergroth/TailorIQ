@@ -31,6 +31,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set the appropriate headers
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
       
       // Send the PDF buffer as the response
       res.send(pdfBuffer);

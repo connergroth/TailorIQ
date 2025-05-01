@@ -31,7 +31,11 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
           '--window-size=1100,1400'
         ],
         pipe: true, // Use pipes instead of WebSockets
-        timeout: 60000
+        timeout: 60000,
+        // Add these options to help with Chrome installation
+        executablePath: process.env.CHROME_PATH || undefined,
+        channel: 'chrome',
+        downloadPath: process.env.PUPPETEER_CACHE_DIR || undefined
       });
 
       // Create new page and wait until network is idle
