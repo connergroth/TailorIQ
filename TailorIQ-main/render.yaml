@@ -3,8 +3,8 @@ services:
     name: tailoriq
     env: node
     plan: free
-    buildCommand: chmod +x render-build.sh && ./render-build.sh && npm install && npm run build
-    startCommand: npm run start
+    buildCommand: chmod +x render-build.sh && ./render-build.sh && npm install && node chrome-installer.js && npm run build
+    startCommand: node ensure-chrome.js && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

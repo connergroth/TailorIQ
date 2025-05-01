@@ -33,6 +33,9 @@ CHROME_VERSION="135.0.7049.114"
 CHROME_DIR="/opt/render/.cache/puppeteer/chrome/linux-$CHROME_VERSION"
 CHROME_EXEC="$CHROME_DIR/chrome-linux64/chrome"
 
+echo "Chrome directory: $CHROME_DIR"
+echo "Chrome executable path: $CHROME_EXEC"
+
 # Create the directory structure
 mkdir -p "$CHROME_DIR/chrome-linux64"
 
@@ -50,7 +53,13 @@ else
     # Extract Chrome
     echo "Extracting Chrome..."
     unzip -q chrome.zip -d "$CHROME_DIR"
-    mv "$CHROME_DIR/chrome-linux64"/* "$CHROME_DIR/chrome-linux64"
+    
+    # Check if the chrome-linux64 directory exists inside chrome-linux64
+    if [ -d "$CHROME_DIR/chrome-linux64/chrome-linux64" ]; then
+        echo "Fixing directory structure..."
+        mv "$CHROME_DIR/chrome-linux64/chrome-linux64"/* "$CHROME_DIR/chrome-linux64/"
+        rmdir "$CHROME_DIR/chrome-linux64/chrome-linux64"
+    fi
     
     # Make Chrome executable
     chmod +x "$CHROME_EXEC"
@@ -59,8 +68,12 @@ else
     rm chrome.zip
     
     echo "Chrome installed successfully at $CHROME_EXEC"
-    "$CHROME_EXEC" --version
+    "$CHROME_EXEC" --version || echo "Failed to get Chrome version"
 fi
+
+# Print directory structure for debugging
+echo "Directory structure:"
+find "$CHROME_DIR" -type f -name "chrome" | xargs ls -la
 
 # Set environment variable to use our Chrome
 echo "Setting PUPPETEER_EXECUTABLE_PATH to $CHROME_EXEC"
