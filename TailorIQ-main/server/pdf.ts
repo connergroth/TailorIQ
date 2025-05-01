@@ -1,6 +1,50 @@
 import { Resume, ResumeTemplate } from "@shared/schema";
 import puppeteer from "puppeteer";
 import { generateJakeGutTemplate } from "./jakeGutTemplate";
+import { execSync } from "child_process";
+import path from "path";
+
+// Helper function to find Chrome in the system
+async function findChrome() {
+  try {
+    // Try to find Chrome using the 'which' command for Linux
+    const chromePaths = [
+      process.env.PUPPETEER_EXECUTABLE_PATH,
+      "/opt/render/.cache/puppeteer/chrome/linux-135.0.7049.114/chrome-linux64/chrome",
+      "/opt/google/chrome/chrome",
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium",
+      "/usr/bin/chromium-browser"
+    ];
+    
+    const fs = await import('fs');
+    
+    // Check each path
+    for (const chromePath of chromePaths) {
+      if (chromePath && fs.existsSync(chromePath)) {
+        console.log(`Found Chrome at: ${chromePath}`);
+        return chromePath;
+      }
+    }
+    
+    // If not found in known locations, try to find using which command
+    try {
+      const chromePath = execSync('which google-chrome').toString().trim();
+      if (chromePath && fs.existsSync(chromePath)) {
+        console.log(`Found Chrome using which command at: ${chromePath}`);
+        return chromePath;
+      }
+    } catch (error) {
+      console.log('Chrome not found using which command');
+    }
+    
+    console.log('Chrome not found in known locations');
+    return null;
+  } catch (error) {
+    console.error('Error finding Chrome:', error);
+    return null;
+  }
+}
 
 // Function to generate a PDF from resume data and selected template
 export async function generatePDF(resumeData: Resume, template: ResumeTemplate, settings: any = {}): Promise<Buffer> {
@@ -12,6 +56,37 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
     try {
       // Generate the HTML for the resume
       const htmlContent = generateResumeHTML(resumeData, template, settings);
+
+      // Log Chrome executable path for debugging
+      console.log("Attempting to launch Chrome with path:", process.env.PUPPETEER_EXECUTABLE_PATH || 'default Puppeteer path');
+      
+      // Check if Chrome exists
+      if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        try {
+          const fs = await import('fs');
+          if (fs.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+            console.log("✅ Chrome executable exists at specified path");
+          } else {
+            console.log("⚠️ Chrome executable not found at specified path:", process.env.PUPPETEER_EXECUTABLE_PATH);
+            
+            // Try to find Chrome
+            const chromePath = await findChrome();
+            if (chromePath) {
+              process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+              console.log("Updated PUPPETEER_EXECUTABLE_PATH to:", chromePath);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking Chrome executable:", error);
+        }
+      } else {
+        // Try to find Chrome
+        const chromePath = await findChrome();
+        if (chromePath) {
+          process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
+          console.log("Set PUPPETEER_EXECUTABLE_PATH to:", chromePath);
+        }
+      }
 
       // Launch with a modified configuration that attempts to download Chrome if not found
       browser = await puppeteer.launch({
@@ -35,6 +110,8 @@ export async function generatePDF(resumeData: Resume, template: ResumeTemplate, 
         // Remove channel and use more flexible executable path detection
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
       });
+
+      console.log("Chrome launched successfully");
 
       // Create new page and wait until network is idle
       const page = await browser.newPage();
