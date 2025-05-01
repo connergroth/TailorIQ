@@ -13,6 +13,8 @@ services:
         value: 5000
       - key: PUPPETEER_CACHE_DIR
         value: /opt/render/.cache/puppeteer
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /opt/render/.cache/puppeteer/chrome/linux-135.0.7049.114/chrome-linux64/chrome
       - key: PUPPETEER_DOWNLOAD_HOST
         value: https://storage.googleapis.com
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
