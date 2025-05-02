@@ -5,6 +5,7 @@
 # 🧵 TailorIQ
 
 **TailorIQ** is an AI-powered resume builder that instantly generates clean, ATS-optimized resumes based on your experience — tailored to each job application.
+> 🏆 Selected as one of two projects showcased at CU Boulder’s Atlas Expo.
 
 ---
 
